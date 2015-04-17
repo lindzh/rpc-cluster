@@ -7,8 +7,15 @@ import com.linda.framework.rpc.cluster.AbstractRpcClusterClientExecutor;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.net.RpcNetBase;
 
-public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor{
+/**
+ * 
+ * @author lindezhi
+ * rpc 集群 redis通知
+ */
+public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor implements Runnable{
 
+	private RpcJedisDelegatePool jedisPool;
+	
 	@Override
 	public void onStart(RpcNetBase network) {
 		
@@ -26,12 +33,12 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 
 	@Override
 	public void startRpcCluster() {
-		
+		jedisPool.startService();
 	}
 
 	@Override
 	public void stopRpcCluster() {
-		
+		jedisPool.stopService();
 	}
 
 	@Override
@@ -41,6 +48,12 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 
 	@Override
 	public void onClose(RpcHostAndPort hostAndPort) {
+		
+	}
+
+	//定时任务，检查
+	@Override
+	public void run() {
 		
 	}
 
