@@ -2,9 +2,9 @@ package com.linda.framework.rpc.cluster.redis;
 
 import java.util.List;
 
+import com.linda.framework.rpc.RpcService;
 import com.linda.framework.rpc.cluster.AbstractRpcClusterClientExecutor;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
-import com.linda.framework.rpc.cluster.ServiceAndVersion;
 import com.linda.framework.rpc.net.RpcNetBase;
 
 public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor{
@@ -20,7 +20,7 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	}
 
 	@Override
-	public List<ServiceAndVersion> getServerService(RpcHostAndPort hostAndPort) {
+	public List<RpcService> getServerService(RpcHostAndPort hostAndPort) {
 		return null;
 	}
 
