@@ -1,6 +1,7 @@
 package com.linda.framework.rpc.cluster.hash;
 
 import java.util.List;
+import java.util.Random;
 
 /**
  * 
@@ -9,9 +10,12 @@ import java.util.List;
  */
 public class RandomHashing implements Hashing{
 
+	private Random random = new Random();
+	
 	@Override
 	public String hash(List<String> servers) {
-		return null;
+		int index = random.nextInt(servers.size());
+		return servers.get(index);
 	}
 
 }

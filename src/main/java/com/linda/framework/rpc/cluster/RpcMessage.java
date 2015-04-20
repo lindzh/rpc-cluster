@@ -1,10 +1,19 @@
 package com.linda.framework.rpc.cluster;
 
-public abstract class RpcMessage<T> {
+public class RpcMessage<T> {
 	
 	private int messageType;
 	
 	private T message;
+	
+	public RpcMessage(){
+		
+	}
+	
+	public RpcMessage(int messageType,T message){
+		this.messageType = messageType;
+		this.message = message;
+	}
 
 	public int getMessageType() {
 		return messageType;

@@ -16,7 +16,7 @@ import com.linda.framework.rpc.exception.RpcException;
 /**
  * 
  * @author lindezhi
- * 统一获取jedis pool代理
+ * 统一获取jedis pool代理 支持sentinels和单节点部署
  */
 public class RpcJedisDelegatePool extends Pool<Jedis> implements Service{
 	

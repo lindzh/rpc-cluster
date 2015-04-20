@@ -12,6 +12,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <fasterxml.version>2.2.0</fasterxml.version>
   </properties>
 
 	<repositories>
@@ -46,6 +47,22 @@
 			<version>2.5.2</version>
 		</dependency>
 		
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>${fasterxml.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>${fasterxml.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>${fasterxml.version}</version>
+		</dependency>
+
 	</dependencies>
   
   	<build>
@@ -82,26 +99,6 @@
 					<target>1.6</target>
 				</configuration>
 			</plugin>
-			<!-- 
-			<plugin>
-				<artifactId>>maven-assembly-plugin</artifactId>
-				<version>2.5.3</version>
-				<configuration>
-					<descriptorRefs>
-						<descriptorRef>jar-with-dependencies</descriptorRef>
-					</descriptorRefs>
-				</configuration>
-				<executions>
-					<execution>
-						<id>make-assembly</id>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			 -->
 		</plugins>
 	</build>
 </project>
