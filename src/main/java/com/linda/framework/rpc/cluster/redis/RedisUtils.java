@@ -5,6 +5,7 @@ import org.apache.log4j.Logger;
 import redis.clients.jedis.Jedis;
 
 import com.linda.framework.rpc.cluster.RpcClusterConst;
+import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.net.AbstractRpcNetworkBase;
 
 public class RedisUtils {
@@ -30,6 +31,10 @@ public class RedisUtils {
 	}
 	
 	public static String genServicesKey(AbstractRpcNetworkBase network){
+		return RpcClusterConst.RPC_REDIS_SERVER_SERVICE_PREFIX+network.getHost()+":"+network.getPort();
+	}
+	
+	public static String genServicesKey(RpcHostAndPort network){
 		return RpcClusterConst.RPC_REDIS_SERVER_SERVICE_PREFIX+network.getHost()+":"+network.getPort();
 	}
 }

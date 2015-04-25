@@ -44,43 +44,43 @@ public class RedisRpcServer extends RpcClusterServer{
 		this.jedisPool = new RpcJedisDelegatePool();
 	}
 
-	public String getHost() {
+	public String getRedisHost() {
 		return jedisPool.getHost();
 	}
 
-	public void setHost(String host) {
+	public void setRedisHost(String host) {
 		jedisPool.setHost(host);
 	}
 
-	public int getPort() {
+	public int getRedisPort() {
 		return jedisPool.getPort();
 	}
 
-	public void setPort(int port) {
+	public void setRedisPort(int port) {
 		jedisPool.setPort(port);
 	}
 
-	public Set<String> getSentinels() {
+	public Set<String> getRedisSentinels() {
 		return jedisPool.getSentinels();
 	}
 
-	public void setSentinels(Set<String> sentinels) {
+	public void setRedisSentinels(Set<String> sentinels) {
 		jedisPool.setSentinels(sentinels);
 	}
 
-	public String getMasterName() {
+	public String getRedisMasterName() {
 		return jedisPool.getMasterName();
 	}
 
-	public void setMasterName(String masterName) {
+	public void setRedisMasterName(String masterName) {
 		jedisPool.setMasterName(masterName);
 	}
 
-	public GenericObjectPoolConfig getPoolConfig() {
+	public GenericObjectPoolConfig getRedisPoolConfig() {
 		return jedisPool.getPoolConfig();
 	}
 
-	public void setPoolConfig(GenericObjectPoolConfig poolConfig) {
+	public void setRedisPoolConfig(GenericObjectPoolConfig poolConfig) {
 		jedisPool.setPoolConfig(poolConfig);
 	}
 
@@ -141,6 +141,9 @@ public class RedisRpcServer extends RpcClusterServer{
 	}
 	
 	private void notifyRpcServer(RpcNetBase network,int messageType){
+		if(this.network==null){
+			this.network = network;
+		}
 		HostAndPort andPort = new HostAndPort(network.getHost(), network.getPort());
 		RpcMessage<HostAndPort> rpcMessage = new RpcMessage<HostAndPort>(messageType,andPort);
 		this.publish(rpcMessage);

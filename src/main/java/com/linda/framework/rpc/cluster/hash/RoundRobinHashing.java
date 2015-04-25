@@ -1,6 +1,7 @@
 package com.linda.framework.rpc.cluster.hash;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 
@@ -8,10 +9,15 @@ import java.util.List;
  * 随机hashing
  */
 public class RoundRobinHashing implements Hashing{
+	
+	private AtomicInteger index = new AtomicInteger();
 
 	@Override
 	public String hash(List<String> servers) {
-		return null;
+		int size = servers.size();
+		int idx = index.incrementAndGet()%size;
+		System.out.println("select:"+servers.get(idx));
+		return servers.get(idx);
 	}
 
 }

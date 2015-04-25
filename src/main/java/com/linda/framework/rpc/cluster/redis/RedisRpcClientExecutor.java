@@ -1,9 +1,11 @@
 package com.linda.framework.rpc.cluster.redis;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.log4j.Logger;
 
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPubSub;
 
 import com.linda.framework.rpc.RpcService;
 import com.linda.framework.rpc.cluster.AbstractRpcClusterClientExecutor;
@@ -83,17 +84,14 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		this.startHeartBeat();
 		this.fetchRpcServers();
 		this.fetchRpcServices();
-		this.startHeartBeat();
 	}
 	
 	private void startPubsubListener(){
 		pubsubListener.addListener(this);
-		RedisUtils.executeRedisCommand(jedisPool, new JedisCallback(){
-			public Object callback(Jedis jedis) {
-				jedis.subscribe(pubsubListener, RpcClusterConst.RPC_REDIS_CHANNEL);
-				return null;
-			}
-		});
+		Jedis jedis = jedisPool.getResource();
+		pubsubListener.setChannel(RpcClusterConst.RPC_REDIS_CHANNEL);
+		pubsubListener.setJedis(jedis);
+		pubsubListener.startService();
 	}
 
 	@Override
@@ -140,9 +138,8 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		RedisUtils.executeRedisCommand(jedisPool, new JedisCallback(){
 			public Object callback(Jedis jedis) {
 				List<RpcHostAndPort> rpcServers = new ArrayList<RpcHostAndPort>();
-				Long llen = jedis.llen(RpcClusterConst.RPC_REDIS_HOSTS_KEY);
-				if(llen!=null&&llen>0){
-					List<String> servers = jedis.lrange(RpcClusterConst.RPC_REDIS_HOSTS_KEY, 0, llen);
+				if(rpcServers!=null){
+					Set<String> servers = jedis.smembers(RpcClusterConst.RPC_REDIS_HOSTS_KEY);
 					for(String server:servers){
 						RpcHostAndPort rpcHostAndPort = JSONUtils.fromJSON(server, RpcHostAndPort.class);
 						rpcServers.add(rpcHostAndPort);
@@ -166,10 +163,9 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		final String servicesKey = RedisUtils.genServicesKey(hostAndPort);
 		RedisUtils.executeRedisCommand(jedisPool, new JedisCallback(){
 			public Object callback(Jedis jedis) {
-				Long llen = jedis.llen(servicesKey);
 				List<RpcService> rpcServices = new ArrayList<RpcService>();
-				if(llen!=null&&llen>0){
-					List<String> services = jedis.lrange(servicesKey, 0, llen-1);
+				Set<String> services = jedis.smembers(servicesKey);
+				if(services!=null){
 					for(String service:services){
 						RpcService rpcService = JSONUtils.fromJSON(service, RpcService.class);
 						rpcServices.add(rpcService);
@@ -220,7 +216,7 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 	
 	private void checkHeartBeat(){
 		List<RpcHostAndPort> needRemoveServers = new ArrayList<RpcHostAndPort>();
-		List<RpcHostAndPort> rpcServers = new ArrayList<RpcHostAndPort>();
+		List<RpcHostAndPort> rpcServers = new ArrayList<RpcHostAndPort>(Arrays.asList(new RpcHostAndPort[rpcServersCache.size()]));
 		Collections.copy(rpcServers, rpcServersCache);
 		for(RpcHostAndPort server:rpcServers){
 			Long beat = heartBeanTimeCache.get(server.toString());

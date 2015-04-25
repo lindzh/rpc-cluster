@@ -3,13 +3,15 @@ package com.linda.framework.rpc.cluster.redis;
 import java.util.ArrayList;
 import java.util.List;
 
-import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.linda.framework.rpc.Service;
 import com.linda.framework.rpc.cluster.JSONUtils;
 import com.linda.framework.rpc.cluster.MessageListener;
 import com.linda.framework.rpc.cluster.RpcClusterConst;
+import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.RpcMessage;
 
 /**
@@ -17,10 +19,32 @@ import com.linda.framework.rpc.cluster.RpcMessage;
  * @author lindezhi
  *
  */
-public class SimpleJedisPubListener extends JedisPubSub{
+public class SimpleJedisPubListener extends JedisPubSub implements Service,Runnable{
+	
+	private Jedis jedis;
+	
+	private Thread messageReceiveThread;
 
+	private String channel;
+	
 	private List<MessageListener> listeners = new ArrayList<MessageListener>();
 	
+	public Jedis getJedis() {
+		return jedis;
+	}
+
+	public void setJedis(Jedis jedis) {
+		this.jedis = jedis;
+	}
+	
+	public String getChannel() {
+		return channel;
+	}
+
+	public void setChannel(String channel) {
+		this.channel = channel;
+	}
+
 	public void fireListeners(RpcMessage message){
 		for(MessageListener listener:listeners){
 			listener.onMessage(message);
@@ -34,7 +58,7 @@ public class SimpleJedisPubListener extends JedisPubSub{
 	@Override
 	public void onMessage(String channel, String message) {
 		if(channel.equals(RpcClusterConst.RPC_REDIS_CHANNEL)){
-			RpcMessage<HostAndPort> rpcMessage = JSONUtils.fromJSON(message, new TypeReference<RpcMessage<HostAndPort>>(){});
+			RpcMessage<RpcHostAndPort> rpcMessage = JSONUtils.fromJSON(message, new TypeReference<RpcMessage<RpcHostAndPort>>(){});
 			this.fireListeners(rpcMessage);
 		}
 	}
@@ -62,5 +86,21 @@ public class SimpleJedisPubListener extends JedisPubSub{
 	@Override
 	public void onPSubscribe(String pattern, int subscribedChannels) {
 		
+	}
+
+	@Override
+	public void startService() {
+		messageReceiveThread = new Thread(this);
+		messageReceiveThread.start();
+	}
+
+	@Override
+	public void stopService() {
+		jedis.close();
+	}
+
+	@Override
+	public void run() {
+		jedis.subscribe(this, channel);
 	}
 }

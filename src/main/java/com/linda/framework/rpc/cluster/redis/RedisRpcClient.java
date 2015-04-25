@@ -4,77 +4,56 @@ import java.util.Set;
 
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
-import com.linda.framework.rpc.client.AbstractClientRemoteExecutor;
-import com.linda.framework.rpc.cluster.AbstractRpcClusterClientExecutor;
 import com.linda.framework.rpc.cluster.RpcClusterClient;
-import com.linda.framework.rpc.exception.RpcException;
 
 public class RedisRpcClient extends RpcClusterClient{
 
 	private RpcJedisDelegatePool jedisPool;
 	
-	private RedisRpcClientExecutor executor;
-	
 	public RedisRpcClient(){
 		jedisPool = new RpcJedisDelegatePool();
-	}
-	
-	@Override
-	public void setRemoteExecutor(AbstractRpcClusterClientExecutor executor) {
-		if(executor instanceof RedisRpcClientExecutor){
-			this.executor = (RedisRpcClientExecutor)executor;
-			super.setRemoteExecutor(executor);
-		}else{
-			throw new RpcException("jedis not supported executor:"+executor.getClass());
-		}
+		RedisRpcClientExecutor executor = new RedisRpcClientExecutor();
+		executor.setJedisPool(jedisPool);
+		super.setRemoteExecutor(executor);
 	}
 
-	@Override
-	public AbstractClientRemoteExecutor getRemoteExecutor() {
-		if(executor==null){
-			executor = new RedisRpcClientExecutor();
-			executor.setJedisPool(jedisPool);
-		}
-		return executor;
-	}
-
-	public String getHost() {
+	public String getRedisHost() {
 		return jedisPool.getHost();
 	}
 
-	public void setHost(String host) {
+	public void setRedisHost(String host) {
 		jedisPool.setHost(host);
 	}
 
-	public int getPort() {
+	public int getRedisPort() {
 		return jedisPool.getPort();
 	}
 
-	public void setPort(int port) {
+	public void setRedisPort(int port) {
 		jedisPool.setPort(port);
 	}
 
-	public Set<String> getSentinels() {
+	public Set<String> getRedisSentinels() {
 		return jedisPool.getSentinels();
 	}
 
-	public void setSentinels(Set<String> sentinels) {
+	public void setRedisSentinels(Set<String> sentinels) {
 		jedisPool.setSentinels(sentinels);
 	}
 
-	public String getMasterName() {
+	public String getRedisMasterName() {
 		return jedisPool.getMasterName();
 	}
 
-	public void setMasterName(String masterName) {
+	public void setRedisMasterName(String masterName) {
 		jedisPool.setMasterName(masterName);
 	}
 
-	public GenericObjectPoolConfig getPoolConfig() {
+	public GenericObjectPoolConfig getRedisPoolConfig() {
 		return jedisPool.getPoolConfig();
 	}
 
-	public void setPoolConfig(GenericObjectPoolConfig poolConfig) {
+	public void setRedisPoolConfig(GenericObjectPoolConfig poolConfig) {
 		jedisPool.setPoolConfig(poolConfig);
 	}
 }
