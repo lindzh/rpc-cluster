@@ -3,7 +3,9 @@ package com.linda.framework.rpc.cluster.redis;
 import org.apache.log4j.Logger;
 
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPubSub;
+
+import com.linda.framework.rpc.cluster.RpcClusterConst;
+import com.linda.framework.rpc.net.AbstractRpcNetworkBase;
 
 public class RedisUtils {
 	
@@ -27,41 +29,7 @@ public class RedisUtils {
 		return null;
 	}
 	
-	public static void main(String[] args) {
-		RpcJedisDelegatePool pool = new RpcJedisDelegatePool();
-		Jedis jedis = pool.getResource();
-		jedis.subscribe(new JedisPubSub(){
-
-			@Override
-			public void onMessage(String channel, String message) {
-				
-			}
-
-			@Override
-			public void onPMessage(String pattern, String channel,
-					String message) {
-				
-			}
-
-			@Override
-			public void onSubscribe(String channel, int subscribedChannels) {
-				
-			}
-
-			@Override
-			public void onUnsubscribe(String channel, int subscribedChannels) {
-				
-			}
-
-			@Override
-			public void onPUnsubscribe(String pattern, int subscribedChannels) {
-				
-			}
-
-			@Override
-			public void onPSubscribe(String pattern, int subscribedChannels) {
-				
-			}
-		}, "");
+	public static String genServicesKey(AbstractRpcNetworkBase network){
+		return RpcClusterConst.RPC_REDIS_SERVER_SERVICE_PREFIX+network.getHost()+":"+network.getPort();
 	}
 }
