@@ -38,7 +38,7 @@ public class RedisRpcServer extends RpcClusterServer{
 	
 	private Timer timer = new Timer();
 
-	private long notifyTtl = 5000;//默认5秒发送一次
+	private long notifyTtl = 3000;//默认5秒发送一次
 	
 	public RedisRpcServer(){
 		this.jedisPool = new RpcJedisDelegatePool();

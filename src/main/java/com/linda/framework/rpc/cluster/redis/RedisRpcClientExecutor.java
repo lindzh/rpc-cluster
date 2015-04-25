@@ -36,7 +36,7 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 	
 	private Timer timer = new Timer();
 	
-	private long checkTtl = 15000;
+	private long checkTtl = 8000;
 	
 	private List<RpcHostAndPort> rpcServersCache = new ArrayList<RpcHostAndPort>();
 	
