@@ -96,6 +96,7 @@ public class SimpleJedisPubListener extends JedisPubSub implements Service,Runna
 
 	@Override
 	public void stopService() {
+		this.unsubscribe();
 		jedis.close();
 	}
 
