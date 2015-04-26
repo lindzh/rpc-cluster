@@ -210,8 +210,11 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		timer.cancel();
 	}
 	
+	/**
+	 * 启动心跳定时检测
+	 */
 	private void startHeartBeat(){
-		timer.scheduleAtFixedRate(new HeartBeatTask(), 1000, checkTtl);
+		timer.scheduleAtFixedRate(new HeartBeatTask(), checkTtl, checkTtl);
 	}
 	
 	private void checkHeartBeat(){

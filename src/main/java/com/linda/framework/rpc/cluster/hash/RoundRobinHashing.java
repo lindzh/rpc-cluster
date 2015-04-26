@@ -16,7 +16,6 @@ public class RoundRobinHashing implements Hashing{
 	public String hash(List<String> servers) {
 		int size = servers.size();
 		int idx = index.incrementAndGet()%size;
-		System.out.println("select:"+servers.get(idx));
 		return servers.get(idx);
 	}
 
