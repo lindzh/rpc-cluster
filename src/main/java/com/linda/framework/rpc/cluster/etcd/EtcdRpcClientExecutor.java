@@ -8,6 +8,8 @@ import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.net.RpcNetBase;
 
 public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor{
+	
+	private String etcdUrl;
 
 	@Override
 	public void onStart(RpcNetBase network) {
