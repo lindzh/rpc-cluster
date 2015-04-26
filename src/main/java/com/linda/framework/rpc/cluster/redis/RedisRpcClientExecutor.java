@@ -204,6 +204,8 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		this.fetchRpcServers();
 		heartBeanTimeCache.put(hostAndPort.toString(), System.currentTimeMillis());
 		this.fetchRpcServices(hostAndPort);
+		//动态更新集群
+		this.startConnector(hostAndPort);
 	}
 	
 	private void stopHeartBeat(){
