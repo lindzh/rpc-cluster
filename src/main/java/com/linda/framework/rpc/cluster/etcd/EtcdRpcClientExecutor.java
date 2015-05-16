@@ -13,9 +13,9 @@ import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.hash.Hashing;
 import com.linda.framework.rpc.cluster.hash.RoundRobinHashing;
 import com.linda.framework.rpc.net.RpcNetBase;
-
 import com.linda.jetcd.EtcdChangeResult;
 import com.linda.jetcd.EtcdClient;
+import com.linda.jetcd.EtcdResult;
 import com.linda.jetcd.EtcdWatchCallback;
 
 public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor implements EtcdWatchCallback{
@@ -32,8 +32,13 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor impl
 	
 	private Logger logger = Logger.getLogger(EtcdRpcClientExecutor.class);
 	
+	
 	public EtcdRpcClientExecutor(String etcdUrl){
 		etcdClient = new EtcdClient(etcdUrl);
+	}
+	
+	private String genServerListKey(){
+		return "/servers";
 	}
 
 	@Override
@@ -100,8 +105,9 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor impl
 	}
 	
 	private void fetchRpcServers(){
-		
+		EtcdResult result = etcdClient.children(this.genServerListKey(), true, true);
 		//TODO
+		
 	}
 	
 	private void fetchRpcServices(){
@@ -111,6 +117,7 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor impl
 	}
 	
 	private void fetchRpcServices(final RpcHostAndPort hostAndPort){
+		
 	}
 
 	private void serverAddOrHearBeat(RpcHostAndPort hostAndPort){
