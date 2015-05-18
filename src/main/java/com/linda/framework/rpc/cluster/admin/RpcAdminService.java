@@ -1,14 +1,14 @@
 package com.linda.framework.rpc.cluster.admin;
 
-import com.linda.framework.rpc.cluster.MessageListener;
-import com.linda.framework.rpc.cluster.RpcMessage;
+import java.util.List;
 
+import com.linda.framework.rpc.RpcService;
+import com.linda.framework.rpc.cluster.RpcHostAndPort;
 
-public class RpcAdminService implements MessageListener{
-
-	@Override
-	public void onMessage(RpcMessage message) {
-		
-	}
+public interface RpcAdminService{
+	
+	public List<RpcHostAndPort> getRpcServers();
+	
+	public List<RpcService> getRpcServices(String rpcServer);
 
 }

@@ -31,19 +31,16 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 
 	@Override
 	public void stopRpcCluster() {
-		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
 	public String hash(List<String> servers) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public void onClose(RpcHostAndPort hostAndPort) {
-		// TODO Auto-generated method stub
 		
 	}
 
