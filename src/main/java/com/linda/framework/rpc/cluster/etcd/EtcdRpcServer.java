@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.apache.log4j.Logger;
+
 import com.linda.framework.rpc.RpcService;
 import com.linda.framework.rpc.cluster.JSONUtils;
 import com.linda.framework.rpc.cluster.MD5Utils;
@@ -38,6 +40,8 @@ public class EtcdRpcServer extends RpcClusterServer {
 	private int serverttl = 10;// 10ms
 
 	private String serverMd5 = null;
+	
+	private Logger logger = Logger.getLogger("rpcCluster");
 
 	private String genServerKey() {
 		return "/"+namespace+"/servers/" + this.serverMd5;
@@ -103,6 +107,7 @@ public class EtcdRpcServer extends RpcClusterServer {
 		String serviceMd5 = MD5Utils.md5(key);
 		String serviceKey = this.genServiceKey(serviceMd5);
 		String serviceJson = JSONUtils.toJSON(service);
+		logger.info("addRpcService:"+serviceJson);
 		this.etcdClient.set(serviceKey, serviceJson);
 	}
 
@@ -128,6 +133,7 @@ public class EtcdRpcServer extends RpcClusterServer {
 				network.getPort());
 		String serverKey = this.genServerKey();
 		String hostAndPortJson = JSONUtils.toJSON(hostAndPort);
+		logger.info("updateServerTTL:"+hostAndPortJson);
 		this.etcdClient.set(serverKey, hostAndPortJson, serverttl);
 	}
 

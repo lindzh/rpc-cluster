@@ -40,11 +40,11 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 
 	private Hashing hashing = new RoundRobinHashing();
 
-	private Logger logger = Logger.getLogger(EtcdRpcClientExecutor.class);
+	private Logger logger = Logger.getLogger("rpcCluster");
 
 	private EtcdWatchCallback etcdServerWatcher = new EtcdWatchCallback() {
 		public void onChange(EtcdChangeResult future) {
-			EtcdRpcClientExecutor.this.fetchRpcServers();
+			EtcdRpcClientExecutor.this.fetchRpcServers(true);
 		}
 	};
 
@@ -72,10 +72,6 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 		return null;
 	}
 
-	public EtcdRpcClientExecutor() {
-
-	}
-
 	private String genServerListKey() {
 		return "/" + namespace + "/servers";
 	}
@@ -93,7 +89,7 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 	public List<RpcHostAndPort> getHostAndPorts() {
 		return rpcServersCache;
 	}
-
+	
 	@Override
 	public List<RpcService> getServerService(RpcHostAndPort hostAndPort) {
 		if (hostAndPort != null) {
@@ -106,8 +102,7 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 	@Override
 	public void startRpcCluster() {
 		this.etcdClient = new EtcdClient(etcdUrl);
-		this.fetchRpcServers();
-		this.fetchRpcServices();
+		this.fetchRpcServers(false);
 	}
 
 	@Override
@@ -145,7 +140,7 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 		}
 	}
 
-	private void updateServerNodes(List<EtcdNode> nodes) {
+	private void updateServerNodes(List<EtcdNode> nodes,boolean startConnector) {
 		if (nodes != null) {
 			// 获取新的列表和老的列表对比
 			HashSet<String> newServers = new HashSet<String>();
@@ -153,8 +148,7 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 			HashMap<String, RpcHostAndPort> newServerMap = new HashMap<String, RpcHostAndPort>();
 			for (EtcdNode node : nodes) {
 				String value = node.getValue();
-				RpcHostAndPort hostAndPort = JSONUtils.fromJSON(value,
-						RpcHostAndPort.class);
+				RpcHostAndPort hostAndPort = JSONUtils.fromJSON(value,RpcHostAndPort.class);
 				String key = hostAndPort.toString();
 				newServerMap.put(key, hostAndPort);
 				newServers.add(key);
@@ -172,36 +166,32 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 			// 新增加的server节点
 			for (String server : needAdd) {
 				RpcHostAndPort hostAndPort = newServerMap.get(server);
-				this.startConnector(hostAndPort);
+				rpcServersCache.add(hostAndPort);
 				this.fetchRpcServices(hostAndPort);
+				if(startConnector){
+					this.startConnector(hostAndPort);
+				}
 			}
 		}
 	}
 
-	private void fetchRpcServers() {
-		EtcdResult result = etcdClient.children(this.genServerListKey(), true,
-				true);
+	private void fetchRpcServers(boolean startConnectors) {
+		EtcdResult result = etcdClient.children(this.genServerListKey(), true,true);
 		if (result.isSuccess()) {
+			logger.info("rpcServers:"+JSONUtils.toJSON(result));
 			EtcdNode node = result.getNode();
 			List<EtcdNode> nodes = node.getNodes();
-			this.updateServerNodes(nodes);
+			this.updateServerNodes(nodes,startConnectors);
 			// 监控节点数据变化
-			this.etcdClient.watchChildren(this.genServerListKey(), true, true,
-					etcdServerWatcher);
+			this.etcdClient.watchChildren(this.genServerListKey(), true, true,etcdServerWatcher);
 		} else {
 
 		}
 	}
 
-	private void fetchRpcServices() {
-		for (RpcHostAndPort hostAndPort : rpcServersCache) {
-			this.fetchRpcServices(hostAndPort);
-		}
-	}
-
 	private String genServerKey(RpcHostAndPort hostAndPort) {
-		String json = JSONUtils.toJSON(hostAndPort);
-		return MD5Utils.md5(json);
+		String str = hostAndPort.getHost()+"_"+hostAndPort.getPort();
+		return MD5Utils.md5(str);
 	}
 
 	/**
@@ -213,23 +203,21 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 		String hostAndPortString = hostAndPort.toString();
 		String serverKey = this.genServerKey(hostAndPort);
 		String serviceListKey = this.getServiceListKey(serverKey);
-		EtcdResult result = this.etcdClient
-				.children(serviceListKey, true, true);
+		EtcdResult result = this.etcdClient.children(serviceListKey, true, true);
 		if (result.isSuccess()) {
+			logger.info("server:"+hostAndPortString+" services:"+JSONUtils.toJSON(result));
 			List<EtcdNode> nodes = result.getNode().getNodes();
 			if (nodes != null) {
 				ArrayList<RpcService> services = new ArrayList<RpcService>();
 				for (EtcdNode node : nodes) {
 					String rpcJson = node.getValue();
-					RpcService rpcService = JSONUtils.fromJSON(rpcJson,
-							RpcService.class);
+					RpcService rpcService = JSONUtils.fromJSON(rpcJson,RpcService.class);
 					services.add(rpcService);
 				}
 				rpcServiceCache.put(hostAndPortString, services);
 			}
 			// 监控节点数据变化
-			this.etcdClient.watchChildren(serviceListKey, true, true,
-					etcdServicesWatcher);
+			this.etcdClient.watchChildren(serviceListKey, true, true,etcdServicesWatcher);
 		}
 	}
 
