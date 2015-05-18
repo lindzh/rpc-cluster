@@ -9,7 +9,7 @@ public class MD5Utils {
 
     public static String md5(String source) {
 		try {
-			byte[] bytes = md5(source).getBytes("utf-8");
+			byte[] bytes = md5(source.getBytes("utf-8"));
 	        char str[] = new char[bytes.length * 2];
 	        int k = 0;
 	        for (int i = 0; i < bytes.length; i++) {
