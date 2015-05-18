@@ -63,11 +63,13 @@ public class EtcdRpcServer extends RpcClusterServer {
 	public void onClose(RpcNetBase network, Exception e) {
 		this.cleanIfExist();
 		this.stopHeartBeat();
+		etcdClient.stop();
 	}
 
 	@Override
 	public void onStart(RpcNetBase network) {
 		etcdClient = new EtcdClient(etcdUrl);
+		etcdClient.start();
 		String str = network.getHost() + "_" + network.getPort();
 		this.serverMd5 = MD5Utils.md5(str);
 		this.network = network;
@@ -96,10 +98,10 @@ public class EtcdRpcServer extends RpcClusterServer {
 
 	private void checkAndAddRpcService() {
 		this.cleanIfExist();
-		this.updateServerTtl();
 		for (RpcService rpcService : rpcServiceCache) {
 			this.addRpcService(rpcService);
 		}
+		this.updateServerTtl();
 	}
 
 	private void addRpcService(RpcService service) {

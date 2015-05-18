@@ -44,17 +44,18 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 
 	private EtcdWatchCallback etcdServerWatcher = new EtcdWatchCallback() {
 		public void onChange(EtcdChangeResult future) {
+			logger.info("servers change");
 			EtcdRpcClientExecutor.this.fetchRpcServers(true);
 		}
 	};
 
 	private EtcdWatchCallback etcdServicesWatcher = new EtcdWatchCallback() {
 		public void onChange(EtcdChangeResult future) {
+			logger.info("serviceChange");
 			EtcdResult result = future.getResult();
 			if (result != null && result.isSuccess()) {
 				String key = result.getNode().getKey();
-				RpcHostAndPort hostAndPort = EtcdRpcClientExecutor.this
-						.getServerAndHost(key);
+				RpcHostAndPort hostAndPort = EtcdRpcClientExecutor.this.getServerAndHost(key);
 				if (hostAndPort != null) {
 					EtcdRpcClientExecutor.this.fetchRpcServices(hostAndPort);
 				}
@@ -102,12 +103,14 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 	@Override
 	public void startRpcCluster() {
 		this.etcdClient = new EtcdClient(etcdUrl);
+		etcdClient.start();
 		this.fetchRpcServers(false);
 	}
 
 	@Override
 	public void stopRpcCluster() {
 		rpcServersCache = null;
+		etcdClient.stop();
 		rpcServiceCache.clear();
 	}
 
@@ -163,6 +166,7 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 				this.removeServer2(old);
 			}
 
+			logger.info("needAddServer:"+JSONUtils.toJSON(needAdd));
 			// 新增加的server节点
 			for (String server : needAdd) {
 				RpcHostAndPort hostAndPort = newServerMap.get(server);

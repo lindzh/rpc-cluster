@@ -11,7 +11,18 @@ public class EtcdClientTest {
 		client.setNamespace("lindezhi");
 		client.startService();
 		HelloRpcService rpcService = client.register(HelloRpcService.class);
-		rpcService.sayHello("this is rpc etcd cluster", 32323);
+		
+		int index = 50000;
+		
+		while(true){
+			rpcService.sayHello("this is rpc etcd test-"+index, index);
+			index++;
+			try {
+				Thread.sleep(1000L);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 }
