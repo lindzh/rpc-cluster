@@ -7,6 +7,8 @@ import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.admin.RpcAdminService;
 
 public class RedisRpcAdminService implements RpcAdminService{
+	
+	private RedisRpcClient redisRpcClient;
 
 	@Override
 	public List<RpcHostAndPort> getRpcServers() {
@@ -14,7 +16,7 @@ public class RedisRpcAdminService implements RpcAdminService{
 	}
 
 	@Override
-	public List<RpcService> getRpcServices(String rpcServer) {
+	public List<RpcService> getRpcServices(RpcHostAndPort rpcServer) {
 		return null;
 	}
 }

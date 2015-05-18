@@ -9,6 +9,6 @@ public interface RpcAdminService{
 	
 	public List<RpcHostAndPort> getRpcServers();
 	
-	public List<RpcService> getRpcServices(String rpcServer);
+	public List<RpcService> getRpcServices(RpcHostAndPort rpcServer);
 
 }
