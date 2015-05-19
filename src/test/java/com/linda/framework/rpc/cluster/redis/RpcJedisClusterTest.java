@@ -1,5 +1,11 @@
-package com.linda.framework.rpc.cluster;
+package com.linda.framework.rpc.cluster.redis;
 
+import com.linda.framework.rpc.cluster.HelloRpcService;
+import com.linda.framework.rpc.cluster.HelloRpcServiceImpl;
+import com.linda.framework.rpc.cluster.HelloRpcTestService;
+import com.linda.framework.rpc.cluster.HelloRpcTestServiceImpl;
+import com.linda.framework.rpc.cluster.LoginRpcService;
+import com.linda.framework.rpc.cluster.LoginRpcServiceImpl;
 import com.linda.framework.rpc.cluster.redis.RedisRpcServer;
 
 public class RpcJedisClusterTest {

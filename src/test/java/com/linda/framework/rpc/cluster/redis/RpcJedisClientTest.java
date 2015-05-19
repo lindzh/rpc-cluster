@@ -1,7 +1,10 @@
-package com.linda.framework.rpc.cluster;
+package com.linda.framework.rpc.cluster.redis;
 
 import java.util.Date;
 
+import com.linda.framework.rpc.cluster.HelloRpcService;
+import com.linda.framework.rpc.cluster.HelloRpcTestService;
+import com.linda.framework.rpc.cluster.LoginRpcService;
 import com.linda.framework.rpc.cluster.redis.RedisRpcClient;
 
 public class RpcJedisClientTest {
