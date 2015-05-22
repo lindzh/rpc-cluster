@@ -17,16 +17,17 @@ public class RpcJedisClientTest {
 		HelloRpcTestService helloRpcTestService = rpcClient.register(HelloRpcTestService.class);
 		HelloRpcService helloRpcService = rpcClient.register(HelloRpcService.class);
 		LoginRpcService loginRpcService = rpcClient.register(LoginRpcService.class);
+		int idx = 1000;
 		while(true){
 			boolean login = loginRpcService.login("linda", "123456");
 			System.out.println("login---:"+login);
 			
-			helloRpcService.sayHello("hihii  "+new Date(), 44);
-			
-			String index = helloRpcTestService.index(43, "idx--"+new Date());
+			helloRpcService.sayHello("hihii  "+new Date(), idx);
+			idx++;
+			String index = helloRpcTestService.index(idx, "idx--"+new Date());
 			System.out.println("index:"+index);
-			
-			Thread.currentThread().sleep(10000L);
+			idx++;
+			Thread.currentThread().sleep(3000L);
 		}
 	}
 	
