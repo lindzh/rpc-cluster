@@ -48,22 +48,17 @@ public class ZkRpcServer extends RpcClusterServer{
 	private List<RpcService> rpcServiceCache = new ArrayList<RpcService>();
 	
 	private String genServerKey() {
-		return "/"+namespace+"/servers/" + this.serverMd5;
+		return "/servers/" + this.serverMd5;
 	}
 
 	private String genServerServiceKey() {
-		return "/"+namespace+"/services/" + this.serverMd5;
+		return "/services/" + this.serverMd5;
 	}
 
 	private String genServiceKey(String serviceMd5) {
-		return "/"+namespace+"/services/" + this.serverMd5 + "/" + serviceMd5;
+		return "/services/" + this.serverMd5 + "/" + serviceMd5;
 	}
 	
-	private void handleZkException(Exception e){
-		logger.error("zk error", e);
-		throw new RpcException(e);
-	}
-
 	@Override
 	public void onClose(RpcNetBase network, Exception e) {
 		this.cleanIfExist();
@@ -86,9 +81,11 @@ public class ZkRpcServer extends RpcClusterServer{
 		logger.info("create rpc provider:"+hostAndPortJson);
 		try{
 			byte[] data = hostAndPortJson.getBytes(defaultEncoding);
-			this.zkclient.create().withMode(CreateMode.EPHEMERAL).forPath(serverKey, data);
+			this.zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(serverKey, data);
+			logger.info("add rpc provider success "+serverKey);
 		}catch(Exception e){
-			this.handleZkException(e);
+			logger.error("add provider error",e);
+			throw new RpcException(e);
 		}
 	}
 	
@@ -103,6 +100,7 @@ public class ZkRpcServer extends RpcClusterServer{
 		zkclient = CuratorFrameworkFactory.builder().namespace(namespace).connectString(connectString)
 		.connectionTimeoutMs(connectTimeout).sessionTimeoutMs(connectTimeout).retryPolicy(retryPolicy).build();
 		zkclient.start();
+		logger.info("init zk connection success");
 	}
 	
 	private void cleanIfExist() {
@@ -110,15 +108,30 @@ public class ZkRpcServer extends RpcClusterServer{
 			// 删除server
 			String serverKey = this.genServerKey();
 			this.zkclient.delete().forPath(serverKey);
+		}catch(Exception e){
+			logger.error("add provider error",e);
+		}
+		try{
 			// 删除server的service列表
 			String serverServiceKey = this.genServerServiceKey();
 			this.zkclient.delete().deletingChildrenIfNeeded().forPath(serverServiceKey);
 		}catch(Exception e){
-			this.handleZkException(e);
+			logger.error("add provider error",e);
+		}
+		logger.info("clean server data");
+	}
+	
+	private void makeSurePath(){
+		String serviceKey = this.genServerServiceKey();
+		try {
+			this.zkclient.create().creatingParentsIfNeeded().forPath(serviceKey);
+		} catch (Exception e) {
+			logger.error("add provider error",e);
 		}
 	}
 	
 	private void checkAndAddRpcService() {
+		this.makeSurePath();
 		for (RpcService rpcService : rpcServiceCache) {
 			this.addRpcService(rpcService);
 		}
@@ -132,9 +145,10 @@ public class ZkRpcServer extends RpcClusterServer{
 		logger.info("addRpcService:"+serviceJson);
 		try{
 			byte[] data = serviceJson.getBytes(defaultEncoding);
-			this.zkclient.setData().forPath(serviceKey, data);
+			this.zkclient.create().forPath(serviceKey, data);
 		}catch(Exception e){
-			this.handleZkException(e);
+			logger.error("add provider error",e);
+			throw new RpcException(e);
 		}
 	}
 

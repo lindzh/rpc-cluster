@@ -55,11 +55,11 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	};
 	
 	private String genServerListKey() {
-		return "/" + namespace + "/servers";
+		return "/servers";
 	}
 
 	private String getServiceListKey(String serverKey) {
-		return "/" + namespace + "/services/" + serverKey;
+		return "/services/" + serverKey;
 	}
 	
 	private String genServerKey(RpcHostAndPort hostAndPort) {
