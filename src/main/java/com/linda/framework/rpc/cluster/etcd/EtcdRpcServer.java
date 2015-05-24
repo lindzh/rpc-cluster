@@ -120,8 +120,7 @@ public class EtcdRpcServer extends RpcClusterServer {
 
 	@Override
 	protected void doRegister(Class<?> clazz, Object ifaceImpl, String version) {
-		RpcService service = new RpcService(clazz.getName(), version, ifaceImpl
-				.getClass().getName());
+		RpcService service = new RpcService(clazz.getName(), version, ifaceImpl.getClass().getName());
 		if (this.network != null) {
 			this.rpcServiceCache.add(service);
 			this.addRpcService(service);
@@ -131,8 +130,7 @@ public class EtcdRpcServer extends RpcClusterServer {
 	}
 
 	private void updateServerTtl() {
-		RpcHostAndPort hostAndPort = new RpcHostAndPort(network.getHost(),
-				network.getPort());
+		RpcHostAndPort hostAndPort = new RpcHostAndPort(network.getHost(),network.getPort());
 		String serverKey = this.genServerKey();
 		String hostAndPortJson = JSONUtils.toJSON(hostAndPort);
 		logger.info("updateServerTTL:"+hostAndPortJson);

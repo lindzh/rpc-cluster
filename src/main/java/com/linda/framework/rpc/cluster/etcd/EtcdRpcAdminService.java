@@ -29,8 +29,7 @@ public class EtcdRpcAdminService implements RpcAdminService, Service {
 	}
 
 	private EtcdRpcClientExecutor getExecutor() {
-		AbstractClientRemoteExecutor executor = etcdRpcClient
-				.getRemoteExecutor();
+		AbstractClientRemoteExecutor executor = etcdRpcClient.getRemoteExecutor();
 		return (EtcdRpcClientExecutor) executor;
 	}
 
