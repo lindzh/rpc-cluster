@@ -9,7 +9,7 @@ import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.admin.RpcAdminService;
 
 public class ZkRpcAdminService implements RpcAdminService, Service {
-	
+
 	private ZkRpcClient zkRpcClient = new ZkRpcClient();
 
 	public String getNamespace() {
@@ -18,6 +18,14 @@ public class ZkRpcAdminService implements RpcAdminService, Service {
 
 	public String getConnectString() {
 		return zkRpcClient.getConnectString();
+	}
+
+	public void setNamespace(String namespace) {
+		zkRpcClient.setNamespace(namespace);
+	}
+
+	public void setConnectString(String connectString) {
+		zkRpcClient.setConnectString(connectString);
 	}
 
 	@Override
@@ -29,7 +37,7 @@ public class ZkRpcAdminService implements RpcAdminService, Service {
 	public void stopService() {
 		this.zkRpcClient.stopService();
 	}
-	
+
 	private ZkRpcClientExecutor getExecutor() {
 		AbstractClientRemoteExecutor executor = zkRpcClient.getRemoteExecutor();
 		return (ZkRpcClientExecutor) executor;
