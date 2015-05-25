@@ -8,14 +8,23 @@ import com.linda.framework.rpc.Service;
 import com.linda.framework.rpc.client.SimpleRpcClient;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.monitor.RpcMonitorService;
+import com.linda.framework.rpc.net.AbstractRpcConnector;
 
 public class SimpleRpcAdminService implements RpcAdminService, Service {
 
 	private SimpleRpcClient client = new SimpleRpcClient();
-	
+
 	private RpcMonitorService monitorService;
-	
+
 	private List<RpcHostAndPort> hosts = new ArrayList<RpcHostAndPort>();
+
+	public Class<? extends AbstractRpcConnector> getConnectorClass() {
+		return client.getConnectorClass();
+	}
+
+	public void setConnectorClass(Class<? extends AbstractRpcConnector> connectorClass) {
+		client.setConnectorClass(connectorClass);
+	}
 
 	public String getHost() {
 		return client.getHost();

@@ -7,6 +7,7 @@ import com.linda.framework.rpc.Service;
 import com.linda.framework.rpc.client.AbstractClientRemoteExecutor;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.admin.RpcAdminService;
+import com.linda.framework.rpc.net.AbstractRpcConnector;
 
 public class ZkRpcAdminService implements RpcAdminService, Service {
 
@@ -26,6 +27,14 @@ public class ZkRpcAdminService implements RpcAdminService, Service {
 
 	public void setConnectString(String connectString) {
 		zkRpcClient.setConnectString(connectString);
+	}
+
+	public Class<? extends AbstractRpcConnector> getConnectorClass() {
+		return zkRpcClient.getConnectorClass();
+	}
+
+	public void setConnectorClass(Class<? extends AbstractRpcConnector> connectorClass) {
+		zkRpcClient.setConnectorClass(connectorClass);
 	}
 
 	@Override

@@ -9,10 +9,19 @@ import com.linda.framework.rpc.RpcService;
 import com.linda.framework.rpc.Service;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.admin.RpcAdminService;
+import com.linda.framework.rpc.net.AbstractRpcConnector;
 
-public class RedisRpcAdminService implements RpcAdminService,Service{
-	
+public class RedisRpcAdminService implements RpcAdminService, Service {
+
 	private RedisRpcClient redisRpcClient = new RedisRpcClient();
+
+	public Class<? extends AbstractRpcConnector> getConnectorClass() {
+		return redisRpcClient.getConnectorClass();
+	}
+
+	public void setConnectorClass(Class<? extends AbstractRpcConnector> connectorClass) {
+		redisRpcClient.setConnectorClass(connectorClass);
+	}
 
 	public String getRedisHost() {
 		return redisRpcClient.getRedisHost();
@@ -53,14 +62,14 @@ public class RedisRpcAdminService implements RpcAdminService,Service{
 	public void setRedisPoolConfig(GenericObjectPoolConfig poolConfig) {
 		redisRpcClient.setRedisPoolConfig(poolConfig);
 	}
-	
-	private RedisRpcClientExecutor getRedisExecutor(){
-		return (RedisRpcClientExecutor)redisRpcClient.getRemoteExecutor();
+
+	private RedisRpcClientExecutor getRedisExecutor() {
+		return (RedisRpcClientExecutor) redisRpcClient.getRemoteExecutor();
 	}
 
 	@Override
 	public List<RpcHostAndPort> getRpcServers() {
-			return getRedisExecutor().getHostAndPorts();
+		return getRedisExecutor().getHostAndPorts();
 	}
 
 	@Override
@@ -75,6 +84,6 @@ public class RedisRpcAdminService implements RpcAdminService,Service{
 
 	@Override
 	public void stopService() {
-		redisRpcClient.startService();		
+		redisRpcClient.startService();
 	}
 }

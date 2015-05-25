@@ -7,6 +7,7 @@ import com.linda.framework.rpc.Service;
 import com.linda.framework.rpc.client.AbstractClientRemoteExecutor;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.admin.RpcAdminService;
+import com.linda.framework.rpc.net.AbstractRpcConnector;
 
 public class EtcdRpcAdminService implements RpcAdminService, Service {
 
@@ -26,6 +27,14 @@ public class EtcdRpcAdminService implements RpcAdminService, Service {
 
 	public void setEtcdUrl(String etcdUrl) {
 		etcdRpcClient.setEtcdUrl(etcdUrl);
+	}
+
+	public Class<? extends AbstractRpcConnector> getConnectorClass() {
+		return etcdRpcClient.getConnectorClass();
+	}
+
+	public void setConnectorClass(Class<? extends AbstractRpcConnector> connectorClass) {
+		etcdRpcClient.setConnectorClass(connectorClass);
 	}
 
 	private EtcdRpcClientExecutor getExecutor() {
