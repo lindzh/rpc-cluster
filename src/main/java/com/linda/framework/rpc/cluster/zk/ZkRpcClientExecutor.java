@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -46,6 +48,11 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	private Hashing hashing = new RoundRobinHashing();
 
 	private Logger logger = Logger.getLogger("rpcCluster");
+	
+	//add timer to execute fetch all task
+	private Timer timer = new Timer();
+	
+	private long taskDelay = 10000;
 	
 	private CuratorWatcher providerWatcher = new CuratorWatcher(){
 		@Override
@@ -263,6 +270,12 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	@Override
 	public void onClose(RpcHostAndPort hostAndPort) {
 		this.closeServer(hostAndPort);
+		//可能是暂时的网络抖动引起的，因此需要再次获取
+		timer.schedule(new TimerTask() {
+			public void run() {
+				ZkRpcClientExecutor.this.fetchRpcServers(true);
+			}
+		}, this.taskDelay);
 	}
 	
 	private void closeServer(RpcHostAndPort hostAndPort) {
