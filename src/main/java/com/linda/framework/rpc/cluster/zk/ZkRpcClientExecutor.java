@@ -260,6 +260,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 		this.zkclient.close();
 		rpcServersCache = null;
 		rpcServiceCache.clear();
+		timer.cancel();
 	}
 
 	@Override
