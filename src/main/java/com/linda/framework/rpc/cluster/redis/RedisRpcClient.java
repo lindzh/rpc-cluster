@@ -7,14 +7,24 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import com.linda.framework.rpc.cluster.RpcClusterClient;
 
 public class RedisRpcClient extends RpcClusterClient{
-
+	
 	private RpcJedisDelegatePool jedisPool;
+	
+	private RedisRpcClientExecutor executor;
 	
 	public RedisRpcClient(){
 		jedisPool = new RpcJedisDelegatePool();
-		RedisRpcClientExecutor executor = new RedisRpcClientExecutor();
+		executor = new RedisRpcClientExecutor();
 		executor.setJedisPool(jedisPool);
 		super.setRemoteExecutor(executor);
+	}
+	
+	public String getNamespace() {
+		return executor.getNamespace();
+	}
+
+	public void setNamespace(String namespace) {
+		executor.setNamespace(namespace);
 	}
 
 	public String getRedisHost() {

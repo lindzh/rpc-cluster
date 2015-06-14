@@ -3,6 +3,8 @@ package com.linda.framework.rpc.cluster.redis;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
 
@@ -28,6 +30,8 @@ public class SimpleJedisPubListener extends JedisPubSub implements Service,Runna
 	private String channel;
 	
 	private List<MessageListener> listeners = new ArrayList<MessageListener>();
+	
+	private Logger logger = Logger.getLogger(SimpleJedisPubListener.class);
 	
 	public Jedis getJedis() {
 		return jedis;
@@ -57,10 +61,8 @@ public class SimpleJedisPubListener extends JedisPubSub implements Service,Runna
 	
 	@Override
 	public void onMessage(String channel, String message) {
-		if(channel.equals(RpcClusterConst.RPC_REDIS_CHANNEL)){
-			RpcMessage<RpcHostAndPort> rpcMessage = JSONUtils.fromJSON(message, new TypeReference<RpcMessage<RpcHostAndPort>>(){});
-			this.fireListeners(rpcMessage);
-		}
+		RpcMessage<RpcHostAndPort> rpcMessage = JSONUtils.fromJSON(message, new TypeReference<RpcMessage<RpcHostAndPort>>(){});
+		this.fireListeners(rpcMessage);
 	}
 
 	@Override
@@ -102,6 +104,7 @@ public class SimpleJedisPubListener extends JedisPubSub implements Service,Runna
 
 	@Override
 	public void run() {
+		logger.info("subscribe:"+channel);
 		jedis.subscribe(this, channel);
 	}
 }

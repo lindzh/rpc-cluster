@@ -31,6 +31,8 @@ import com.linda.framework.rpc.net.RpcNetBase;
  * rpc 集群 redis通知
  */
 public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor implements MessageListener{
+	
+	private String namespace = "default";
 
 	private RpcJedisDelegatePool jedisPool;
 	
@@ -50,6 +52,14 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 	
 	private Logger logger = Logger.getLogger(RedisRpcClientExecutor.class);
 	
+	public String getNamespace() {
+		return namespace;
+	}
+
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
+	}
+
 	public RpcJedisDelegatePool getJedisPool() {
 		return jedisPool;
 	}
@@ -89,7 +99,7 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 	private void startPubsubListener(){
 		pubsubListener.addListener(this);
 		Jedis jedis = jedisPool.getResource();
-		pubsubListener.setChannel(RpcClusterConst.RPC_REDIS_CHANNEL);
+		pubsubListener.setChannel(namespace+"_"+RpcClusterConst.RPC_REDIS_CHANNEL);
 		pubsubListener.setJedis(jedis);
 		pubsubListener.startService();
 	}
@@ -139,7 +149,7 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 			public Object callback(Jedis jedis) {
 				List<RpcHostAndPort> rpcServers = new ArrayList<RpcHostAndPort>();
 				if(rpcServers!=null){
-					Set<String> servers = jedis.smembers(RpcClusterConst.RPC_REDIS_HOSTS_KEY);
+					Set<String> servers = jedis.smembers(namespace+"_"+RpcClusterConst.RPC_REDIS_HOSTS_KEY);
 					for(String server:servers){
 						RpcHostAndPort rpcHostAndPort = JSONUtils.fromJSON(server, RpcHostAndPort.class);
 						rpcServers.add(rpcHostAndPort);
@@ -179,6 +189,7 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 
 	@Override
 	public void onMessage(RpcMessage message) {
+		logger.info("onMessage:"+JSONUtils.toJSON(message));
 		RpcHostAndPort hostAndPort = (RpcHostAndPort)message.getMessage();
 		int messageType = message.getMessageType();
 		if(messageType==RpcClusterConst.CODE_SERVER_STOP){

@@ -8,6 +8,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import org.apache.log4j.Logger;
 
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.Jedis;
@@ -30,6 +31,8 @@ import com.linda.framework.rpc.utils.RpcUtils;
  */
 public class RedisRpcServer extends RpcClusterServer{
 	
+	private String namespace = "default";
+	
 	private RpcJedisDelegatePool jedisPool;
 	
 	private List<RpcService> rpcServiceCache = new ArrayList<RpcService>();
@@ -40,8 +43,18 @@ public class RedisRpcServer extends RpcClusterServer{
 
 	private long notifyTtl = 3000;//默认5秒发送一次
 	
+	private Logger logger = Logger.getLogger(RedisRpcServer.class);
+	
 	public RedisRpcServer(){
 		this.jedisPool = new RpcJedisDelegatePool();
+	}
+
+	public String getNamespace() {
+		return namespace;
+	}
+
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
 	}
 
 	public String getRedisHost() {
@@ -120,7 +133,7 @@ public class RedisRpcServer extends RpcClusterServer{
 				final HostAndPort andPort = new HostAndPort(network.getHost(), network.getPort());
 				final String json = JSONUtils.toJSON(andPort);
 				//删除host
-				jedis.srem(RpcClusterConst.RPC_REDIS_HOSTS_KEY, json);
+				jedis.srem(namespace+"_"+RpcClusterConst.RPC_REDIS_HOSTS_KEY, json);
 				return null;
 			}
 		});
@@ -134,7 +147,9 @@ public class RedisRpcServer extends RpcClusterServer{
 				//默认三倍通知的过期时间
 				int expire = (int)(notifyTtl*3)/1000;
 				jedis.expire(servicesKey, expire);
-				jedis.publish(RpcClusterConst.RPC_REDIS_CHANNEL, json);
+				String channel = namespace+"_"+RpcClusterConst.RPC_REDIS_CHANNEL;
+				jedis.publish(channel, json);
+				logger.info("publish "+channel+" message:"+json);
 				return null;
 			}
 		});
@@ -155,7 +170,7 @@ public class RedisRpcServer extends RpcClusterServer{
 		final String json = JSONUtils.toJSON(andPort);
 		RedisUtils.executeRedisCommand(jedisPool,new JedisCallback(){
 			public Object callback(Jedis jedis) {
-				jedis.sadd(RpcClusterConst.RPC_REDIS_HOSTS_KEY, json);
+				jedis.sadd(namespace+"_"+RpcClusterConst.RPC_REDIS_HOSTS_KEY, json);
 				return null;
 			}
 		});
