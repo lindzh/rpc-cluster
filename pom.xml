@@ -4,7 +4,7 @@
 
   <groupId>com.linda</groupId>
   <artifactId>framework-rpc-cluster</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.2-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>framework-rpc-cluster</name>
@@ -38,7 +38,7 @@
 		<dependency>
 			<groupId>com.linda</groupId>
 			<artifactId>framework-rpc</artifactId>
-			<version>0.1.1-SNAPSHOT</version>
+			<version>0.1.2-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>

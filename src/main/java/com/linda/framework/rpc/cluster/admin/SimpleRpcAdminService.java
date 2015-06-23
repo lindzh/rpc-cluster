@@ -66,4 +66,14 @@ public class SimpleRpcAdminService implements RpcAdminService, Service {
 	public List<RpcService> getRpcServices(RpcHostAndPort rpcServer) {
 		return monitorService.getRpcServices();
 	}
+
+	@Override
+	public String getNamespace() {
+		return null;
+	}
+
+	@Override
+	public void setNamespace(String namespace) {
+		
+	}
 }

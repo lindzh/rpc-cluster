@@ -86,4 +86,14 @@ public class RedisRpcAdminService implements RpcAdminService, Service {
 	public void stopService() {
 		redisRpcClient.startService();
 	}
+
+	@Override
+	public String getNamespace() {
+		return redisRpcClient.getNamespace();
+	}
+
+	@Override
+	public void setNamespace(String namespace) {
+		redisRpcClient.setNamespace(namespace);
+	}
 }
