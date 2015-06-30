@@ -14,8 +14,7 @@ public class EtcdServerTest {
 		EtcdRpcServer rpcServer = new EtcdRpcServer();
 		rpcServer.setEtcdUrl("http://192.168.139.129:2911");
 		rpcServer.setNamespace("lindezhi");
-		rpcServer.setHost("127.0.0.1");
-		rpcServer.setPort(3333);
+		rpcServer.setPort(3351);
 		rpcServer.register(HelloRpcService.class, new HelloRpcServiceImpl());
 		rpcServer.register(LoginRpcService.class, new LoginRpcServiceImpl());
 		rpcServer.register(HelloRpcTestService.class, new HelloRpcTestServiceImpl());
