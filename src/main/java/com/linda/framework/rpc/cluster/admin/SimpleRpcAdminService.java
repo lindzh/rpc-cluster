@@ -48,6 +48,7 @@ public class SimpleRpcAdminService implements RpcAdminService, Service {
 		RpcHostAndPort hostAndPort = new RpcHostAndPort();
 		hostAndPort.setHost(client.getHost());
 		hostAndPort.setPort(client.getPort());
+		hostAndPort.setTime(System.currentTimeMillis());
 		hosts.add(hostAndPort);
 		monitorService = client.register(RpcMonitorService.class);
 	}
