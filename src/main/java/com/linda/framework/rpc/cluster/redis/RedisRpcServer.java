@@ -17,9 +17,8 @@ import com.linda.framework.rpc.RpcService;
 import com.linda.framework.rpc.cluster.JSONUtils;
 import com.linda.framework.rpc.cluster.RpcClusterConst;
 import com.linda.framework.rpc.cluster.RpcClusterServer;
+import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.RpcMessage;
-import com.linda.framework.rpc.cluster.hash.Hashing;
-import com.linda.framework.rpc.cluster.hash.RoundRobinHashing;
 import com.linda.framework.rpc.net.RpcNetBase;
 import com.linda.framework.rpc.utils.RpcUtils;
 
@@ -42,6 +41,8 @@ public class RedisRpcServer extends RpcClusterServer{
 	private Timer timer = new Timer();
 
 	private long notifyTtl = 3000;//默认5秒发送一次
+	
+	private long time = 0;
 	
 	private Logger logger = Logger.getLogger(RedisRpcServer.class);
 	
@@ -107,6 +108,7 @@ public class RedisRpcServer extends RpcClusterServer{
 	
 	@Override
 	public void onStart(RpcNetBase network) {
+		time = System.currentTimeMillis();
 		this.startJedisAndAddHost(network);
 		this.checkAndAddRpcService(network);
 		this.notifyRpcServer(network,RpcClusterConst.CODE_SERVER_START);
@@ -159,14 +161,16 @@ public class RedisRpcServer extends RpcClusterServer{
 		if(this.network==null){
 			this.network = network;
 		}
-		HostAndPort andPort = new HostAndPort(network.getHost(), network.getPort());
-		RpcMessage<HostAndPort> rpcMessage = new RpcMessage<HostAndPort>(messageType,andPort);
+		final RpcHostAndPort andPort = new RpcHostAndPort(network.getHost(), network.getPort());
+		andPort.setTime(time);
+		RpcMessage<RpcHostAndPort> rpcMessage = new RpcMessage<RpcHostAndPort>(messageType,andPort);
 		this.publish(rpcMessage);
 	}
 	
 	private void startJedisAndAddHost(RpcNetBase network){
 		jedisPool.startService();
-		final HostAndPort andPort = new HostAndPort(network.getHost(), network.getPort());
+		final RpcHostAndPort andPort = new RpcHostAndPort(network.getHost(), network.getPort());
+		andPort.setTime(time);
 		final String json = JSONUtils.toJSON(andPort);
 		RedisUtils.executeRedisCommand(jedisPool,new JedisCallback(){
 			public Object callback(Jedis jedis) {
@@ -216,6 +220,7 @@ public class RedisRpcServer extends RpcClusterServer{
 	@Override
 	protected void doRegister(Class<?> clazz, Object ifaceImpl, String version) {
 		RpcService service = new RpcService(clazz.getName(),version,ifaceImpl.getClass().getName());
+		service.setTime(System.currentTimeMillis());
 		if(this.network!=null){
 			this.rpcServiceCache.add(service);
 			this.addRpcServiceTo(null,service, network);

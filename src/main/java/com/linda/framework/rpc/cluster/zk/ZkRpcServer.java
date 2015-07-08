@@ -41,6 +41,8 @@ public class ZkRpcServer extends RpcClusterServer{
 	
 	private RpcNetBase network;
 	
+	private long time = 0;
+	
 	private Logger logger = Logger.getLogger("rpcCluster");
 	
 	private String defaultEncoding = "utf-8";
@@ -67,6 +69,7 @@ public class ZkRpcServer extends RpcClusterServer{
 
 	@Override
 	public void onStart(RpcNetBase network) {
+		time = System.currentTimeMillis();
 		this.initServerMd5(network);
 		this.initZk();
 		this.cleanIfExist();
@@ -76,6 +79,7 @@ public class ZkRpcServer extends RpcClusterServer{
 	
 	private void addProviderServer(){
 		RpcHostAndPort hostAndPort = new RpcHostAndPort(network.getHost(),network.getPort());
+		hostAndPort.setTime(time);
 		String serverKey = this.genServerKey();
 		String hostAndPortJson = JSONUtils.toJSON(hostAndPort);
 		logger.info("create rpc provider:"+hostAndPortJson);
@@ -160,6 +164,7 @@ public class ZkRpcServer extends RpcClusterServer{
 	@Override
 	protected void doRegister(Class<?> clazz, Object ifaceImpl, String version) {
 		RpcService service = new RpcService(clazz.getName(), version, ifaceImpl.getClass().getName());
+		service.setTime(System.currentTimeMillis());
 		if (this.network != null) {
 			this.rpcServiceCache.add(service);
 			this.addRpcService(service);
