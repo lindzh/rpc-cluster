@@ -3,6 +3,7 @@ package com.linda.framework.rpc.cluster.redis;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +18,7 @@ import redis.clients.jedis.Jedis;
 import com.linda.framework.rpc.RpcService;
 import com.linda.framework.rpc.cluster.AbstractRpcClusterClientExecutor;
 import com.linda.framework.rpc.cluster.JSONUtils;
+import com.linda.framework.rpc.cluster.MD5Utils;
 import com.linda.framework.rpc.cluster.MessageListener;
 import com.linda.framework.rpc.cluster.RpcClusterConst;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
@@ -41,6 +43,8 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 	private long checkTtl = 8000;
 	
 	private List<RpcHostAndPort> rpcServersCache = new ArrayList<RpcHostAndPort>();
+	
+	private Set<String> serverMd5s = new HashSet<String>();
 	
 	private Map<String,List<RpcService>> rpcServiceCache = new ConcurrentHashMap<String, List<RpcService>>();
 	
@@ -134,13 +138,18 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		super.removeServer(hostAndPort.toString());
 		String hostAndPortStr = hostAndPort.toString();
 		List<RpcHostAndPort> hostAndPorts = new ArrayList<RpcHostAndPort>();
+		Set<String> newMd5s = new HashSet<String>();
 		for(RpcHostAndPort hap:rpcServersCache){
 			if(!hap.toString().equals(hostAndPortStr)){
 				hostAndPorts.add(hap);
+				String str = hap.getHost() + "_" + hap.getPort();
+				String serverMd5 = MD5Utils.md5(str);
+				newMd5s.add(serverMd5);
 			}
 		}
 		synchronized (this) {
 			rpcServersCache = hostAndPorts;
+			serverMd5s = newMd5s;
 		}
 	}
 	
@@ -150,9 +159,15 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 				List<RpcHostAndPort> rpcServers = new ArrayList<RpcHostAndPort>();
 				if(rpcServers!=null){
 					Set<String> servers = jedis.smembers(namespace+"_"+RpcClusterConst.RPC_REDIS_HOSTS_KEY);
-					for(String server:servers){
-						RpcHostAndPort rpcHostAndPort = JSONUtils.fromJSON(server, RpcHostAndPort.class);
-						rpcServers.add(rpcHostAndPort);
+					if(servers!=null){
+						serverMd5s = servers;
+						for(String server:serverMd5s){
+							String serverJson = jedis.get(namespace+"_"+server);
+							if(serverJson!=null){
+								RpcHostAndPort rpcHostAndPort = JSONUtils.fromJSON(serverJson, RpcHostAndPort.class);
+								rpcServers.add(rpcHostAndPort);
+							}
+						}
 					}
 				}
 				synchronized (RedisRpcClientExecutor.this) {
@@ -170,7 +185,9 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 	}
 	
 	private void fetchRpcServices(final RpcHostAndPort hostAndPort){
-		final String servicesKey = RedisUtils.genServicesKey(hostAndPort);
+		String str = hostAndPort.getHost() + "_" + hostAndPort.getPort();
+		String serverMd5 = MD5Utils.md5(str);
+		final String servicesKey = RedisUtils.genServicesKey(namespace, serverMd5);
 		RedisUtils.executeRedisCommand(jedisPool, new JedisCallback(){
 			public Object callback(Jedis jedis) {
 				List<RpcService> rpcServices = new ArrayList<RpcService>();

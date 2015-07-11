@@ -30,11 +30,7 @@ public class RedisUtils {
 		return null;
 	}
 	
-	public static String genServicesKey(AbstractRpcNetworkBase network){
-		return RpcClusterConst.RPC_REDIS_SERVER_SERVICE_PREFIX+network.getHost()+":"+network.getPort();
-	}
-	
-	public static String genServicesKey(RpcHostAndPort network){
-		return RpcClusterConst.RPC_REDIS_SERVER_SERVICE_PREFIX+network.getHost()+":"+network.getPort();
+	public static String genServicesKey(String namespace,String md5){
+		return RpcClusterConst.RPC_REDIS_SERVER_SERVICE_PREFIX+"_"+namespace+"_"+md5;
 	}
 }
