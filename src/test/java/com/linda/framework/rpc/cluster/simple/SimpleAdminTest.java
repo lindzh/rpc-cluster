@@ -3,7 +3,9 @@ package com.linda.framework.rpc.cluster.simple;
 import java.util.List;
 
 import com.linda.framework.rpc.RpcService;
+import com.linda.framework.rpc.client.SimpleRpcClient;
 import com.linda.framework.rpc.cluster.JSONUtils;
+import com.linda.framework.rpc.cluster.LoginRpcService;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.admin.SimpleRpcAdminService;
 
@@ -26,6 +28,16 @@ public class SimpleAdminTest {
 			System.out.println(JSONUtils.toJSON(server.getHost()+":"+server.getPort()+"     "+services));
 		}
 		
+	}
+	
+	public static void test(){
+SimpleRpcClient rpcClient = new SimpleRpcClient();
+rpcClient.setHost("192.168.132.87");
+rpcClient.setPort(4321);
+LoginRpcService loginRpcService = rpcClient.register(LoginRpcService.class);
+rpcClient.startService();
+boolean loginResult = loginRpcService.login("admin", "admin");
+rpcClient.stopService();
 	}
 
 }
