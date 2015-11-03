@@ -8,6 +8,7 @@ import com.linda.framework.rpc.client.AbstractClientRemoteExecutor;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.admin.RpcAdminService;
 import com.linda.framework.rpc.net.AbstractRpcConnector;
+import com.linda.framework.rpc.serializer.RpcSerializer;
 
 public class EtcdRpcAdminService implements RpcAdminService, Service {
 
@@ -60,5 +61,10 @@ public class EtcdRpcAdminService implements RpcAdminService, Service {
 	@Override
 	public void stopService() {
 		etcdRpcClient.stopService();
+	}
+
+	@Override
+	public void setSerializer(RpcSerializer serializer) {
+		etcdRpcClient.setSerializer(serializer);
 	}
 }

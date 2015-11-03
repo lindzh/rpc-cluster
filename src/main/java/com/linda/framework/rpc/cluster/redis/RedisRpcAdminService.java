@@ -10,6 +10,7 @@ import com.linda.framework.rpc.Service;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.admin.RpcAdminService;
 import com.linda.framework.rpc.net.AbstractRpcConnector;
+import com.linda.framework.rpc.serializer.RpcSerializer;
 
 public class RedisRpcAdminService implements RpcAdminService, Service {
 
@@ -95,5 +96,10 @@ public class RedisRpcAdminService implements RpcAdminService, Service {
 	@Override
 	public void setNamespace(String namespace) {
 		redisRpcClient.setNamespace(namespace);
+	}
+
+	@Override
+	public void setSerializer(RpcSerializer serializer) {
+		redisRpcClient.setSerializer(serializer);		
 	}
 }

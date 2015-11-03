@@ -8,6 +8,7 @@ import com.linda.framework.rpc.client.AbstractClientRemoteExecutor;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.admin.RpcAdminService;
 import com.linda.framework.rpc.net.AbstractRpcConnector;
+import com.linda.framework.rpc.serializer.RpcSerializer;
 
 public class ZkRpcAdminService implements RpcAdminService, Service {
 
@@ -60,5 +61,10 @@ public class ZkRpcAdminService implements RpcAdminService, Service {
 	@Override
 	public List<RpcService> getRpcServices(RpcHostAndPort rpcServer) {
 		return this.getExecutor().getServerService(rpcServer);
+	}
+
+	@Override
+	public void setSerializer(RpcSerializer serializer) {
+		zkRpcClient.setSerializer(serializer);
 	}
 }

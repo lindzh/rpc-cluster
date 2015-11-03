@@ -9,6 +9,7 @@ import com.linda.framework.rpc.client.SimpleRpcClient;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.monitor.RpcMonitorService;
 import com.linda.framework.rpc.net.AbstractRpcConnector;
+import com.linda.framework.rpc.serializer.RpcSerializer;
 
 public class SimpleRpcAdminService implements RpcAdminService, Service {
 
@@ -76,5 +77,10 @@ public class SimpleRpcAdminService implements RpcAdminService, Service {
 	@Override
 	public void setNamespace(String namespace) {
 		
+	}
+
+	@Override
+	public void setSerializer(RpcSerializer serializer) {
+		client.setSerializer(serializer);
 	}
 }

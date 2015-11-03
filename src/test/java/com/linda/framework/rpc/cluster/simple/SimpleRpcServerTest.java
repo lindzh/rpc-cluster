@@ -6,6 +6,7 @@ import com.linda.framework.rpc.cluster.HelloRpcTestService;
 import com.linda.framework.rpc.cluster.HelloRpcTestServiceImpl;
 import com.linda.framework.rpc.cluster.LoginRpcService;
 import com.linda.framework.rpc.cluster.LoginRpcServiceImpl;
+import com.linda.framework.rpc.cluster.serializer.ProtostuffSerializer;
 import com.linda.framework.rpc.server.SimpleRpcServer;
 
 public class SimpleRpcServerTest {
@@ -15,6 +16,8 @@ public class SimpleRpcServerTest {
 		SimpleRpcServer rpcServer = new SimpleRpcServer();
 		rpcServer.setHost("127.0.0.1");
 		rpcServer.setPort(4321);
+
+		rpcServer.setSerializer(new ProtostuffSerializer());
 		
 		rpcServer.register(HelloRpcService.class, new HelloRpcServiceImpl());
 		rpcServer.register(LoginRpcService.class, new LoginRpcServiceImpl());

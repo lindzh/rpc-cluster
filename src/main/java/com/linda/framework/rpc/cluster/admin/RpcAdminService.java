@@ -5,6 +5,7 @@ import java.util.List;
 import com.linda.framework.rpc.RpcService;
 import com.linda.framework.rpc.Service;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
+import com.linda.framework.rpc.serializer.RpcSerializer;
 
 public interface RpcAdminService extends Service{
 	
@@ -15,5 +16,7 @@ public interface RpcAdminService extends Service{
 	public String getNamespace();
 	
 	public void setNamespace(String namespace);
+	
+	public void setSerializer(RpcSerializer serializer);
 
 }
