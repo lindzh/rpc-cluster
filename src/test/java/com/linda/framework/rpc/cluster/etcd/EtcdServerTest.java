@@ -6,6 +6,7 @@ import com.linda.framework.rpc.cluster.HelloRpcTestService;
 import com.linda.framework.rpc.cluster.HelloRpcTestServiceImpl;
 import com.linda.framework.rpc.cluster.LoginRpcService;
 import com.linda.framework.rpc.cluster.LoginRpcServiceImpl;
+import com.linda.framework.rpc.cluster.serializer.ProtostuffSerializer;
 
 public class EtcdServerTest {
 	
@@ -14,6 +15,7 @@ public class EtcdServerTest {
 		EtcdRpcServer rpcServer = new EtcdRpcServer();
 		rpcServer.setEtcdUrl("http://192.168.139.129:2911");
 		rpcServer.setNamespace("myapp-mymodule");
+		rpcServer.setSerializer(new ProtostuffSerializer());
 		rpcServer.setPort(3351);
 		rpcServer.register(HelloRpcService.class, new HelloRpcServiceImpl());
 		rpcServer.register(LoginRpcService.class, new LoginRpcServiceImpl());

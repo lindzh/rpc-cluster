@@ -1,6 +1,7 @@
 package com.linda.framework.rpc.cluster.etcd;
 
 import com.linda.framework.rpc.cluster.HelloRpcService;
+import com.linda.framework.rpc.cluster.serializer.ProtostuffSerializer;
 
 public class EtcdClientTest {
 	
@@ -9,6 +10,7 @@ public class EtcdClientTest {
 		EtcdRpcClient client = new EtcdRpcClient();
 		client.setEtcdUrl("http://192.168.139.129:2911");
 		client.setNamespace("lindezhi");
+		client.setSerializer(new ProtostuffSerializer());
 		client.startService();
 		HelloRpcService rpcService = client.register(HelloRpcService.class);
 		
