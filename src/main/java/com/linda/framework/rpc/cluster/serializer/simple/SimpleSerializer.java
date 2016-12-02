@@ -7,6 +7,7 @@ import java.io.*;
 
 /**
  * Created by lin on 2016/12/2.
+ * 跨语言序列化
  */
 public class SimpleSerializer implements RpcSerializer{
 
