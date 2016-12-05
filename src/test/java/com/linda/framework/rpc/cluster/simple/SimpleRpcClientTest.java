@@ -5,6 +5,9 @@ import com.linda.framework.rpc.cluster.*;
 import com.linda.framework.rpc.cluster.serializer.ProtostuffSerializer;
 import com.linda.framework.rpc.cluster.serializer.simple.SimpleSerializer;
 
+import java.util.HashSet;
+import java.util.List;
+
 public class SimpleRpcClientTest {
 	
 	public static void main(String[] args) {
@@ -35,6 +38,13 @@ public class SimpleRpcClientTest {
 
 		System.out.println(remoteBean);
 
+		HashSet<String> stringHashSet = new HashSet<String>();
+		stringHashSet.add("hfrg5rhrh");
+		List<String> result = helloService.getString(stringHashSet);
+		System.out.println(result);
+
+		String[] rr  = helloService.hahahString(result.toArray(new String[0]));
+		System.out.println(rr);
 		client.stopService();
 		
 	}

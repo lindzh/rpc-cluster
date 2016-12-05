@@ -16,7 +16,8 @@ public class SimpleSerializer implements RpcSerializer{
         SimpleOutput out = new SimpleOutput(obj);
         System.out.println("haha:serialize");
         try {
-            return out.writeObject();
+            byte[] result = out.writeObject();
+            return result;
         } catch (IOException e) {
             throw new RpcException(e);
         }
@@ -27,7 +28,8 @@ public class SimpleSerializer implements RpcSerializer{
         System.out.println("haha:deserialize");
         SimpleInput input = new SimpleInput(bytes);
         try {
-            return input.readObject();
+            Object result = input.readObject();
+            return result;
         } catch (IOException e) {
             throw new RpcException(e);
         } catch (ClassNotFoundException e) {

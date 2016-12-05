@@ -137,12 +137,27 @@ public class SimpleOutput {
         return result;
     }
 
+    private byte getItemType(Class clazz){
+        return 0;
+    }
+
     private void writeArray(Object[] arr)throws IOException{
         if(arr!=null){
             dos.writeByte(SimpleConst.ArrayType|SimpleConst.NotNull);
             dos.writeShort((short)arr.length);
+            Object arrobj = (Object)arr;
+            Class clazz = arrobj.getClass().getComponentType();
+            //里面的item类型,任意还是指定
+            if(clazz==Object.class){
+                dos.writeByte(SimpleConst.AnyType);
+            }else{
+                dos.writeByte(SimpleConst.ObjectType);
+            }
             if(arr.length>0){
                 for(Object obj:arr){
+                    if(obj==null){
+                        throw new IOException("array object can't be null");
+                    }
                     this.writeObject(obj);
                 }
             }

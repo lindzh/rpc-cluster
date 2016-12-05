@@ -2,6 +2,10 @@ package com.linda.framework.rpc.cluster;
 
 import org.apache.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
 public class HelloRpcServiceImpl implements HelloRpcService{
 
 	private Logger logger = Logger.getLogger(HelloRpcServiceImpl.class);
@@ -34,4 +38,14 @@ public class HelloRpcServiceImpl implements HelloRpcService{
 		return 1;
 	}
 
+	@Override
+	public List<String> getString(Set<String> hahah) {
+		System.out.println("getString");
+		return new ArrayList<String>(hahah);
+	}
+
+	@Override
+	public String[] hahahString(String[] haha) {
+		return haha;
+	}
 }

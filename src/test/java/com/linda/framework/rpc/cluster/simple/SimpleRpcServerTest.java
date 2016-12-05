@@ -8,6 +8,7 @@ import com.linda.framework.rpc.cluster.LoginRpcService;
 import com.linda.framework.rpc.cluster.LoginRpcServiceImpl;
 import com.linda.framework.rpc.cluster.serializer.ProtostuffSerializer;
 import com.linda.framework.rpc.cluster.serializer.simple.SimpleSerializer;
+import com.linda.framework.rpc.serializer.JdkSerializer;
 import com.linda.framework.rpc.server.SimpleRpcServer;
 
 public class SimpleRpcServerTest {

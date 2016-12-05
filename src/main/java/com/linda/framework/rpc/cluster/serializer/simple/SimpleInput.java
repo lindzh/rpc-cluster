@@ -5,6 +5,7 @@ import com.linda.framework.rpc.exception.RpcException;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
@@ -93,13 +94,26 @@ public class SimpleInput {
         //arr
         else if(type==(SimpleConst.ArrayType|SimpleConst.NotNull)){
             short len = dis.readShort();
+
+            //数组里面的item类型
+            byte itemType = dis.readByte();
+
             ArrayList list = new ArrayList();
             if(len>0){
                 for(int i=0;i<len;i++){
                     list.add(this.readObject());
                 }
             }
-            return list.toArray();
+
+            if(itemType==SimpleConst.ObjectType&&list.size()>0){
+                Object result = Array.newInstance(list.get(0).getClass(), list.size());
+                for(int i=0;i<len;i++){
+                    Array.set(result,i,list.get(i));
+                }
+                return result;
+            }else{
+                return list.toArray();
+            }
         }
         //set
         else if(type==(SimpleConst.SetType|SimpleConst.NotNull)){
@@ -156,7 +170,6 @@ public class SimpleInput {
             short flen = dis.readShort();
             for(int i=0;i<flen;i++){
                String fname = this.readString(true);
-                System.out.println(fname);
                 Object fvalue = this.readObject();
                 Field ff = fmap.get(fname);
                 ff.set(obj,fvalue);
