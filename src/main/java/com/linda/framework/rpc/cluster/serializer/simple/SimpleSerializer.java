@@ -14,6 +14,7 @@ public class SimpleSerializer implements RpcSerializer{
     @Override
     public byte[] serialize(Object obj) {
         SimpleOutput out = new SimpleOutput(obj);
+        System.out.println("haha:serialize");
         try {
             return out.writeObject();
         } catch (IOException e) {
@@ -23,6 +24,7 @@ public class SimpleSerializer implements RpcSerializer{
 
     @Override
     public Object deserialize(byte[] bytes) {
+        System.out.println("haha:deserialize");
         SimpleInput input = new SimpleInput(bytes);
         try {
             return input.readObject();

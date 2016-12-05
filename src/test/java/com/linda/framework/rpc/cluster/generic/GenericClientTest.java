@@ -3,6 +3,7 @@ package com.linda.framework.rpc.cluster.generic;
 import java.util.HashMap;
 
 import com.linda.framework.rpc.client.SimpleRpcClient;
+import com.linda.framework.rpc.cluster.serializer.simple.SimpleSerializer;
 import com.linda.framework.rpc.generic.GenericService;
 import com.linda.framework.rpc.utils.RpcUtils;
 
@@ -11,7 +12,8 @@ public class GenericClientTest {
 	public static void main(String[] a) {
 		SimpleRpcClient client = new SimpleRpcClient();
 		client.setHost("127.0.0.1");
-		client.setPort(4445);
+		client.setPort(4321);
+		client.setSerializer(new SimpleSerializer());
 		client.startService();
 		GenericService service = client.register(GenericService.class);
 		
