@@ -39,7 +39,7 @@ public class SimpleRpcClientTest {
 		System.out.println(remoteBean);
 
 		HashSet<String> stringHashSet = new HashSet<String>();
-		stringHashSet.add("hfrg5rhrh");
+//		stringHashSet.add("hfrg5rhrh");
 		List<String> result = helloService.getString(stringHashSet);
 		System.out.println(result);
 

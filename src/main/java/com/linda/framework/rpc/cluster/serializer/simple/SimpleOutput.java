@@ -137,8 +137,74 @@ public class SimpleOutput {
         return result;
     }
 
-    private byte getItemType(Class clazz){
-        return 0;
+    /**
+     * 解析生成集合类item类型
+     * @param clazz
+     * @return
+     * @throws IOException
+     */
+    private SimpleType getItemType(Class clazz) throws IOException {
+
+        if(clazz.isArray()){
+            throw new IOException("array can't be as collection item");
+        }
+        //
+        if(Collection.class.isAssignableFrom(clazz)){
+            throw new IOException("collection can't be as collection item");
+        }
+        //集合不支持
+        if(Map.class.isAssignableFrom(clazz)){
+            throw new IOException("map can't be as collection item");
+        }
+
+
+        if(clazz==int.class){
+            return SimpleConst.typeMap.get(SimpleConst.intType);
+        }else if(clazz==short.class){
+            return SimpleConst.typeMap.get(SimpleConst.shortType);
+        }else if(clazz==long.class){
+            return SimpleConst.typeMap.get(SimpleConst.longType);
+        }else if(clazz==byte.class){
+            return SimpleConst.typeMap.get(SimpleConst.byteType);
+        }else if(clazz==float.class){
+            return SimpleConst.typeMap.get(SimpleConst.floatType);
+        }else if(clazz==double.class){
+            return SimpleConst.typeMap.get(SimpleConst.doubleType);
+        }else if(clazz==boolean.class){
+            return SimpleConst.typeMap.get(SimpleConst.booleanType);
+        }else if(clazz==char.class){
+            return SimpleConst.typeMap.get(SimpleConst.charType);
+        }
+
+        else if(clazz==Integer.class){
+            return SimpleConst.typeMap.get(SimpleConst.IntegerType);
+        }else if(clazz==Short.class){
+            return SimpleConst.typeMap.get(SimpleConst.ShortType);
+        }else if(clazz==Long.class){
+            return SimpleConst.typeMap.get(SimpleConst.LongType);
+        }else if(clazz==Byte.class){
+            return SimpleConst.typeMap.get(SimpleConst.ByteType);
+        }else if(clazz==Float.class){
+            return SimpleConst.typeMap.get(SimpleConst.FloatType);
+        }else if(clazz==Double.class){
+            return SimpleConst.typeMap.get(SimpleConst.DoubleType);
+        }else if(clazz==Boolean.class){
+            return SimpleConst.typeMap.get(SimpleConst.BooleanType);
+        }else if(clazz==Character.class){
+            return SimpleConst.typeMap.get(SimpleConst.CharacterType);
+        }
+
+        else if(clazz==String.class){
+            return SimpleConst.typeMap.get(SimpleConst.StringType);
+        }
+
+        //任意类型,由值具体确定
+        else if(clazz==Object.class){
+            return SimpleConst.typeMap.get(SimpleConst.AnyType);
+        }else{
+            //自定义对象类型
+            return SimpleConst.typeMap.get(SimpleConst.ObjectType);
+        }
     }
 
     private void writeArray(Object[] arr)throws IOException{
@@ -148,10 +214,15 @@ public class SimpleOutput {
             Object arrobj = (Object)arr;
             Class clazz = arrobj.getClass().getComponentType();
             //里面的item类型,任意还是指定
-            if(clazz==Object.class){
-                dos.writeByte(SimpleConst.AnyType);
+            SimpleType type = this.getItemType(clazz);
+            //先写类型,后写classname
+            dos.writeByte(type.getType());
+            if(type.getType()==SimpleConst.ObjectType){
+                //需要转换成真正类型
+                this.writeString(clazz.getName());
+
             }else{
-                dos.writeByte(SimpleConst.ObjectType);
+                this.writeString(type.getName());
             }
             if(arr.length>0){
                 for(Object obj:arr){

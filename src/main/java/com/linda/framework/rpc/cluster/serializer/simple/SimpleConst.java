@@ -1,5 +1,8 @@
 package com.linda.framework.rpc.cluster.serializer.simple;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Created by lin on 2016/12/2.
  */
@@ -60,4 +63,33 @@ public class SimpleConst {
     //============================Object类型定义------------------------
 
     static final byte ObjectType = 22;
+
+    static final Map<Byte,SimpleType> typeMap = new HashMap();
+
+    static {
+        typeMap.put(intType,new SimpleType(intType,"int"));
+        typeMap.put(shortType,new SimpleType(shortType,"short"));
+        typeMap.put(longType,new SimpleType(longType,"long"));
+        typeMap.put(floatType,new SimpleType(floatType,"float"));
+        typeMap.put(doubleType,new SimpleType(doubleType,"double"));
+        typeMap.put(booleanType,new SimpleType(booleanType,"boolean"));
+        typeMap.put(byteType,new SimpleType(byteType,"byte"));
+        typeMap.put(charType,new SimpleType(charType,"char"));
+
+        typeMap.put(IntegerType,new SimpleType(IntegerType,"Integer"));
+        typeMap.put(LongType,new SimpleType(LongType,"Long"));
+        typeMap.put(ShortType,new SimpleType(shortType,"Short"));
+        typeMap.put(FloatType,new SimpleType(FloatType,"Float"));
+        typeMap.put(DoubleType,new SimpleType(DoubleType,"Double"));
+        typeMap.put(BooleanType,new SimpleType(BooleanType,"Boolean"));
+        typeMap.put(ByteType,new SimpleType(ByteType,"Byte"));
+        typeMap.put(CharacterType,new SimpleType(CharacterType,"Character"));
+
+        typeMap.put(StringType,new SimpleType(StringType,"String"));
+
+        //指定对象
+        typeMap.put(ObjectType,new SimpleType(ObjectType,"any"));
+
+        typeMap.put(AnyType,new SimpleType(AnyType,"Object"));
+    }
 }

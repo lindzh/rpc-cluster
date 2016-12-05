@@ -27,6 +27,62 @@ public class SimpleInput {
         this.dis = new DataInputStream(bis);
     }
 
+    private Class getClass(byte type,String name) throws ClassNotFoundException, IOException {
+        if(type==SimpleConst.intType){
+            return int.class;
+        }else if(type==SimpleConst.shortType){
+            return short.class;
+        }else if(type==SimpleConst.longType){
+            return long.class;
+        }else if(type==SimpleConst.byteType){
+            return byte.class;
+        }else if(type==SimpleConst.floatType){
+            return float.class;
+        }else if(type==SimpleConst.doubleType){
+            return double.class;
+        }else if(type==SimpleConst.booleanType){
+            return boolean.class;
+        }else if(type==SimpleConst.charType){
+            return char.class;
+        }
+
+        else if(type==SimpleConst.IntegerType){
+            return Integer.class;
+        }else if(type==SimpleConst.ShortType){
+            return Short.class;
+        }else if(type==SimpleConst.LongType){
+            return Long.class;
+        }else if(type==SimpleConst.ByteType){
+            return Byte.class;
+        }else if(type==SimpleConst.BooleanType){
+            return Boolean.class;
+        }else if(type==SimpleConst.FloatType){
+            return Float.class;
+        }else if(type==SimpleConst.DoubleType){
+            return Double.class;
+        }else if(type==SimpleConst.CharacterType){
+            return Character.class;
+        }
+
+        else if(type==SimpleConst.StringType){
+            return String.class;
+        }
+
+        //Object[]
+        else if(type==SimpleConst.AnyType){
+            return Object.class;
+        }
+        //自定义对象
+        else if(type==SimpleConst.ObjectType){
+            return Class.forName(name);
+        }
+
+        else {
+            throw new IOException("unknown type class "+type);
+        }
+
+    }
+
     public Object readObject() throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
        byte type =  dis.readByte();
 
@@ -97,6 +153,7 @@ public class SimpleInput {
 
             //数组里面的item类型
             byte itemType = dis.readByte();
+            String clazz = this.readString(true);
 
             ArrayList list = new ArrayList();
             if(len>0){
@@ -105,14 +162,16 @@ public class SimpleInput {
                 }
             }
 
-            if(itemType==SimpleConst.ObjectType&&list.size()>0){
-                Object result = Array.newInstance(list.get(0).getClass(), list.size());
+            //具体类型组合
+            Class zz = this.getClass(itemType,clazz);
+            if(len>0){
+                Object result =  Array.newInstance(zz, len);
                 for(int i=0;i<len;i++){
                     Array.set(result,i,list.get(i));
                 }
                 return result;
             }else{
-                return list.toArray();
+                return Array.newInstance(zz, 0);
             }
         }
         //set
