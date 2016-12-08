@@ -25,12 +25,12 @@ public class GenericClientTest {
 		map.put("order", "trtr");
 		map.put("message", "this is a test");
 		Object[] getBeanArgs = new Object[]{map,543543};
-		Object hh = service.invoke("com.linda.framework.rpc.cluster.HelloRpcService", RpcUtils.DEFAULT_VERSION, "getBean", getBeanTypes, getBeanArgs);
+		Object hh = service.invoke(null,"com.linda.framework.rpc.cluster.HelloRpcService", RpcUtils.DEFAULT_VERSION, "getBean", getBeanTypes, getBeanArgs);
 		System.out.println(hh);
 		
 		String[] argTypes = new String[]{"java.lang.String","int"};
 		Object[] args = new Object[]{"hello,this is linda",543543};
-		Object invoke = service.invoke("com.linda.framework.rpc.cluster.HelloRpcService", RpcUtils.DEFAULT_VERSION, "sayHello", argTypes, args);
+		Object invoke = service.invoke(null,"com.linda.framework.rpc.cluster.HelloRpcService", RpcUtils.DEFAULT_VERSION, "sayHello", argTypes, args);
 		System.out.println("result:"+invoke);
 		System.out.println("---------------");
 		client.stopService();

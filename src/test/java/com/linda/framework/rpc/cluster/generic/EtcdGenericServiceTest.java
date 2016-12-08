@@ -25,7 +25,7 @@ public class EtcdGenericServiceTest {
 			map.put("order", "index-"+index);
 			map.put("message", "this is a test index+"+index);
 			Object[] getBeanArgs = new Object[]{map,index*100+5};
-			Object hh = genericService.invoke("com.linda.framework.rpc.cluster.HelloRpcService", RpcUtils.DEFAULT_VERSION, "getBean", getBeanTypes, getBeanArgs);
+			Object hh = genericService.invoke(null,"com.linda.framework.rpc.cluster.HelloRpcService", RpcUtils.DEFAULT_VERSION, "getBean", getBeanTypes, getBeanArgs);
 			System.out.println(JSONUtils.toJSON(hh));
 			index++;
 			try {
