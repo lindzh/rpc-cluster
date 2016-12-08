@@ -165,9 +165,17 @@ public class ZkRpcServer extends RpcClusterServer{
 
 	@Override
 	protected void doRegister(Class<?> clazz, Object ifaceImpl, String version) {
+		this.doRegister(clazz, ifaceImpl, version,RpcUtils.DEFAULT_GROUP);
+	}
+
+	@Override
+	protected void doRegister(Class<?> clazz, Object ifaceImpl, String version,String group) {
 		RpcService service = new RpcService(clazz.getName(), version, ifaceImpl.getClass().getName());
 		service.setTime(System.currentTimeMillis());
+
 		service.setApplication(this.getApplication());
+
+		service.setGroup(group);
 
 		if (this.network != null) {
 			this.rpcServiceCache.add(service);

@@ -133,10 +133,17 @@ public class EtcdRpcServer extends RpcClusterServer {
 
 	@Override
 	protected void doRegister(Class<?> clazz, Object ifaceImpl, String version) {
+		this.doRegister(clazz, ifaceImpl, version,RpcUtils.DEFAULT_GROUP);
+	}
+
+	@Override
+	protected void doRegister(Class<?> clazz, Object ifaceImpl, String version,String group) {
 		RpcService service = new RpcService(clazz.getName(), version, ifaceImpl.getClass().getName());
 
 		//增加application
 		service.setApplication(this.getApplication());
+		//增加分组支持
+		service.setGroup(group);
 
 		service.setTime(System.currentTimeMillis());
 		if (this.network != null) {
