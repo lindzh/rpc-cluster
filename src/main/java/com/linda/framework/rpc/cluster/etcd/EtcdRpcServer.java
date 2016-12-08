@@ -134,6 +134,10 @@ public class EtcdRpcServer extends RpcClusterServer {
 	@Override
 	protected void doRegister(Class<?> clazz, Object ifaceImpl, String version) {
 		RpcService service = new RpcService(clazz.getName(), version, ifaceImpl.getClass().getName());
+
+		//增加application
+		service.setApplication(this.getApplication());
+
 		service.setTime(System.currentTimeMillis());
 		if (this.network != null) {
 			this.rpcServiceCache.add(service);

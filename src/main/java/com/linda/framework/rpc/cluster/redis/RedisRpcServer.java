@@ -230,6 +230,9 @@ public class RedisRpcServer extends RpcClusterServer{
 	protected void doRegister(Class<?> clazz, Object ifaceImpl, String version) {
 		RpcService service = new RpcService(clazz.getName(),version,ifaceImpl.getClass().getName());
 		service.setTime(System.currentTimeMillis());
+		//添加application
+		service.setApplication(this.getApplication());
+
 		if(this.network!=null){
 			this.rpcServiceCache.add(service);
 			this.addRpcServiceTo(null,service, network);
