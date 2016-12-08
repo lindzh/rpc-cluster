@@ -68,6 +68,10 @@ public class EtcdRpcServer extends RpcClusterServer {
 		etcdClient.stop();
 	}
 
+	/**
+	 * 启动成功之后,添加service,然后添加server
+	 * @param network
+     */
 	@Override
 	public void onStart(RpcNetBase network) {
 		time = System.currentTimeMillis();
@@ -90,6 +94,9 @@ public class EtcdRpcServer extends RpcClusterServer {
 		timer.scheduleAtFixedRate(new HeartBeatTask(), start, notifyTtl);
 	}
 
+	/**
+	 * 添加服务器ip地址到注册中心
+	 */
 	private void cleanIfExist() {
 		// 删除server
 		String serverKey = this.genServerKey();
@@ -99,6 +106,9 @@ public class EtcdRpcServer extends RpcClusterServer {
 		this.etcdClient.delDir(serverServiceKey, true);
 	}
 
+	/**
+	 * 添加服务列表到注册中心
+	 */
 	private void checkAndAddRpcService() {
 		this.cleanIfExist();
 		for (RpcService rpcService : rpcServiceCache) {
@@ -133,9 +143,16 @@ public class EtcdRpcServer extends RpcClusterServer {
 		}
 	}
 
+	/**
+	 * 添加服务器到注册中心,不断更新
+	 */
 	private void updateServerTtl() {
 		RpcHostAndPort hostAndPort = new RpcHostAndPort(network.getHost(),network.getPort());
+
 		hostAndPort.setTime(time);
+		//token
+		hostAndPort.setToken(this.getToken());
+
 		String serverKey = this.genServerKey();
 		String hostAndPortJson = JSONUtils.toJSON(hostAndPort);
 		logger.info("updateServerTTL:"+hostAndPortJson);

@@ -80,6 +80,8 @@ public class ZkRpcServer extends RpcClusterServer{
 	private void addProviderServer(){
 		RpcHostAndPort hostAndPort = new RpcHostAndPort(network.getHost(),network.getPort());
 		hostAndPort.setTime(time);
+		hostAndPort.setToken(this.getToken());
+
 		String serverKey = this.genServerKey();
 		String hostAndPortJson = JSONUtils.toJSON(hostAndPort);
 		logger.info("create rpc provider:"+hostAndPortJson);

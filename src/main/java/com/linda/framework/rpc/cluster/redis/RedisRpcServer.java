@@ -166,6 +166,9 @@ public class RedisRpcServer extends RpcClusterServer{
 		}
 		final RpcHostAndPort andPort = new RpcHostAndPort(network.getHost(), network.getPort());
 		andPort.setTime(time);
+		//token
+		andPort.setToken(this.getToken());
+
 		RpcMessage<RpcHostAndPort> rpcMessage = new RpcMessage<RpcHostAndPort>(messageType,andPort);
 		this.publish(rpcMessage);
 	}
