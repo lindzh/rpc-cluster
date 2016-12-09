@@ -69,7 +69,12 @@ public class ZkRpcClient extends RpcClusterClient {
 			zkRpcClientExecutor.setMaxRetry(maxRetry);
 		}
 	}
-	
+
+	@Override
+	public <T> void doRegisterRemote(Class<T> iface, String version, String group) {
+
+	}
+
 	@Override
 	public AbstractClientRemoteExecutor getRemoteExecutor() {
 		this.checkExecutor();
