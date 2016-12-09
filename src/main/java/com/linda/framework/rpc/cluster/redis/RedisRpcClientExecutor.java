@@ -273,4 +273,9 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 			checkHeartBeat();
 		}
 	}
+
+	@Override
+	public <T> void doRegisterRemote(Class<T> iface, String version, String group) {
+
+	}
 }

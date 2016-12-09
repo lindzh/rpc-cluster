@@ -323,4 +323,9 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	public void setBaseSleepTime(int baseSleepTime) {
 		this.baseSleepTime = baseSleepTime;
 	}
+
+	@Override
+	public <T> void doRegisterRemote(Class<T> iface, String version, String group) {
+
+	}
 }

@@ -19,11 +19,6 @@ public class RedisRpcClient extends RpcClusterClient{
 		super.setRemoteExecutor(executor);
 	}
 
-	@Override
-	public <T> void doRegisterRemote(Class<T> iface, String version, String group) {
-
-	}
-
 	public String getNamespace() {
 		return executor.getNamespace();
 	}

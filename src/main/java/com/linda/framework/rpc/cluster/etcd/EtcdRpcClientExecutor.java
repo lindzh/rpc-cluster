@@ -241,4 +241,8 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 		this.etcdUrl = etcdUrl;
 	}
 
+	@Override
+	public <T> void doRegisterRemote(Class<T> iface, String version, String group) {
+
+	}
 }
