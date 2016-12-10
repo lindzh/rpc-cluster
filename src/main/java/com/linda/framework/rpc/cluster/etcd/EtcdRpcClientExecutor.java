@@ -122,7 +122,7 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 	}
 
 	@Override
-	public String hash(List<String> servers) {
+	public String hash(List<RpcHostAndPort> servers) {
 		return hashing.hash(servers);
 	}
 
@@ -339,5 +339,19 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 		}else{
 			throw new RpcException(result.getCause());
 		}
+	}
+
+	@Override
+	public List<HostWeight> getWeights(String application) {
+		return null;
+	}
+
+	private void doSetWehgit(String application,String key,int weight,boolean override){
+
+	}
+
+	@Override
+	public void setWeight(String application, HostWeight weight) {
+		this.doSetWehgit(application,weight.getKey(),weight.getWeight(),true);
 	}
 }

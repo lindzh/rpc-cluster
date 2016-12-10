@@ -14,7 +14,7 @@ public class RpcZkServerTest {
 		rpcServer.setConnectString("127.0.0.1:2181");
 		rpcServer.setNamespace("myrpc");
 		rpcServer.setHost("127.0.0.1");
-		rpcServer.setPort(3333);
+		rpcServer.setPort(3335);
 		rpcServer.setApplication("myapp");
 		rpcServer.setValidateToken(true);
 		rpcServer.register(HelloRpcService.class, new HelloRpcServiceImpl(),null,"hello");

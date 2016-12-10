@@ -10,6 +10,7 @@ import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 
 import com.linda.framework.rpc.RpcService;
@@ -17,11 +18,12 @@ import com.linda.framework.rpc.cluster.hash.Hashing;
 import com.linda.framework.rpc.cluster.hash.RoundRobinHashing;
 import com.linda.framework.rpc.exception.RpcException;
 import com.linda.framework.rpc.net.RpcNetBase;
+import org.apache.zookeeper.data.Stat;
 
 public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	
 	private CuratorFramework zkclient;
-	
+
 	private String namespace = "rpc";
 	
 	private String connectString;
@@ -33,6 +35,8 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	private int baseSleepTime = 1000;
 	
 	private String defaultEncoding = "utf-8";
+
+	private Map<String,List<HostWeight>> applicationWeightMap = new HashMap<String,List<HostWeight>>();
 
 	private List<RpcHostAndPort> rpcServersCache = new ArrayList<RpcHostAndPort>();
 
@@ -263,7 +267,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	}
 
 	@Override
-	public String hash(List<String> servers) {
+	public String hash(List<RpcHostAndPort> servers) {
 		return this.hashing.hash(servers);
 	}
 
@@ -333,6 +337,10 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 		consumeObject.setVersion(version);
 		consumeObject.setIp(ip);
 		consumeServices.add(consumeObject);
+
+		if(zkclient!=null){
+			this.doUpload(consumeObject);
+		}
 	}
 
 	public List<String> getConsumeApplications(String group,String service,String version){
@@ -370,23 +378,143 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 		return consumers;
 	}
 
+	private void doUpload(ConsumeRpcObject rpc){
+		//group service version
+		String service = rpc.getGroup()+"_"+rpc.getClassName()+"_"+rpc.getVersion();
+		try {
+			//当前机器临时节点
+			String host = "/consumers/"+service+"/"+rpc.getApplication()+"/"+rpc.getIp();
+			byte[] data = JSONUtils.toJSON(rpc).getBytes();
+			zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(host,data);
+		} catch (Exception e) {
+			throw new RpcException(e);
+		}
+	}
+
 	/**
 	 * 消费者信息上传到注册中心
 	 */
 	private void doUpload(){
 		if(consumeServices.size()>0){
 			for(ConsumeRpcObject rpc:consumeServices){
-				//group service version
-				String service = rpc.getGroup()+"_"+rpc.getClassName()+"_"+rpc.getVersion();
-				try {
-					//当前机器临时节点
-					String host = "/consumers/"+service+"/"+rpc.getApplication()+"/"+rpc.getIp();
-					byte[] data = JSONUtils.toJSON(rpc).getBytes();
-					zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(host,data);
-				} catch (Exception e) {
-					e.printStackTrace();
+				this.doUpload();
+			}
+		}
+	}
+
+	private String genWeightKey(String application,String hostkey){
+		return "/weights/"+application+"/"+hostkey;
+	}
+
+	private String genApplicationWeightsKey(String application){
+		return "/weights/"+application;
+	}
+
+	private void watchWeight(final String application){
+
+		String applicationWeightsKey = this.genApplicationWeightsKey(application);
+		try{
+			zkclient.getChildren().usingWatcher(new CuratorWatcher() {
+				@Override
+				public void process(WatchedEvent watchedEvent) throws Exception {
+					//拿到权重列表
+					getWeights(application);
+					//继续watch
+					watchWeight(application);
+				}
+			}).inBackground().forPath(applicationWeightsKey);
+		}catch(Exception e){
+			logger.error("[zookeeper] watch "+applicationWeightsKey,e);
+		}
+	}
+
+	/**
+	 * 获取权重列表
+	 * @param application
+	 * @return
+	 * 从缓存获取
+     */
+	@Override
+	public List<HostWeight> getWeights(String application) {
+		List<HostWeight> weights = applicationWeightMap.get(application);
+		if(weights!=null){
+			return weights;
+		}
+
+		String weightsKey = this.genApplicationWeightsKey(application);
+		ArrayList<HostWeight> result = new ArrayList<HostWeight>();
+		try {
+			List<String> hosts = zkclient.getChildren().forPath(weightsKey);
+			if(hosts!=null&&hosts.size()>0){
+				for(String host:hosts){
+					String genWeightKey = this.genWeightKey(application, host);
+					byte[] data = zkclient.getData().forPath(genWeightKey);
+					if(data!=null){
+						String ww = new String(data);
+						int w = Integer.parseInt(ww);
+						String[] hostport = host.split(":");
+						HostWeight weight = new HostWeight();
+						weight.setWeight(w);
+						weight.setHost(hostport[0]);
+						weight.setPort(Integer.parseInt(hostport[1]));
+						result.add(weight);
+					}
+				}
+			}
+
+		} catch (Exception e) {
+			throw new RpcException(e);
+		}
+		//监控数据变化
+		this.watchWeight(application);
+		applicationWeightMap.put(application,result);
+		return result;
+	}
+
+	/**
+	 * 设置权重列表
+	 * @param application
+	 * @param key
+	 * @param weight
+	 * @param override
+     */
+	/**
+	 * 设置权重列表
+	 * @param application
+	 * @param key
+	 * @param weight
+	 * @param override
+	 */
+	private void doSetWehgit(String application,String key,int weight,boolean override){
+		String path = this.genWeightKey(application,key);
+		byte[] data = (""+weight).getBytes();
+		if(override){
+			try{
+				zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(path,data);
+			}catch(Exception e){
+				throw new RpcException(e);
+			}
+
+		}else{
+			try{
+				byte[] bytes = zkclient.getData().forPath(path);
+				if(bytes==null){
+					zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(path,data);
+				}
+			}catch(Exception e){
+				if(e instanceof KeeperException.NoNodeException){
+					try {
+						zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(path,data);
+					} catch (Exception e1) {
+						throw new RpcException(e1);
+					}
 				}
 			}
 		}
+	}
+
+	@Override
+	public void setWeight(String application, HostWeight weight) {
+		this.doSetWehgit(application,weight.getKey(),weight.getWeight(),true);
 	}
 }

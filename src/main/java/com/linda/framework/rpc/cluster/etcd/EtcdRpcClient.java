@@ -27,6 +27,12 @@ public class EtcdRpcClient extends RpcClusterClient {
 		this.namespace = namespace;
 	}
 
+	@Override
+	public <T> T register(Class<T> iface, String version, String group) {
+		this.checkExecutor();
+		return super.register(iface, version, group);
+	}
+
 	private void checkExecutor(){
 		if(executor==null){
 			executor = new EtcdRpcClientExecutor();
@@ -34,6 +40,7 @@ public class EtcdRpcClient extends RpcClusterClient {
 			if(namespace!=null){
 				executor.setNamespace(namespace);
 			}
+			super.setRemoteExecutor(executor);
 		}
 	}
 

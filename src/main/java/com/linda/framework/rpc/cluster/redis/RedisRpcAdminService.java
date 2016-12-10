@@ -3,6 +3,7 @@ package com.linda.framework.rpc.cluster.redis;
 import java.util.List;
 import java.util.Set;
 
+import com.linda.framework.rpc.cluster.HostWeight;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import com.linda.framework.rpc.RpcService;
@@ -12,7 +13,7 @@ import com.linda.framework.rpc.cluster.admin.RpcAdminService;
 import com.linda.framework.rpc.net.AbstractRpcConnector;
 import com.linda.framework.rpc.serializer.RpcSerializer;
 
-public class RedisRpcAdminService implements RpcAdminService, Service {
+public class RedisRpcAdminService extends RpcAdminService implements Service {
 
 	private RedisRpcClient redisRpcClient = new RedisRpcClient();
 
@@ -101,5 +102,15 @@ public class RedisRpcAdminService implements RpcAdminService, Service {
 	@Override
 	public void setSerializer(RpcSerializer serializer) {
 		redisRpcClient.setSerializer(serializer);		
+	}
+
+	@Override
+	public List<HostWeight> getWeights(String application) {
+		return this.getRedisExecutor().getWeights(application);
+	}
+
+	@Override
+	public void setWeight(String application, HostWeight weight) {
+		this.getRedisExecutor().setWeight(application, weight);
 	}
 }

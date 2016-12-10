@@ -8,9 +8,14 @@ public class RpcZkClientTest {
 		ZkRpcClient client = new ZkRpcClient();
 		client.setConnectString("127.0.0.1:2181");
 		client.setNamespace("myrpc");
-		client.startService();
 		client.setApplication("test");
-		HelloRpcService rpcService = client.register(HelloRpcService.class,null,"test");
+
+		client.startService();
+		HelloRpcService rpcService = client.register(HelloRpcService.class,null,"hello");
+
+
+
+
 		
 		int index = 50000;
 		

@@ -17,6 +17,7 @@ import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.exception.RpcException;
 import com.linda.framework.rpc.net.RpcNetBase;
 import com.linda.framework.rpc.utils.RpcUtils;
+import org.apache.zookeeper.KeeperException;
 
 /**
  * 基于zk的服务化管理
@@ -75,6 +76,8 @@ public class ZkRpcServer extends RpcClusterServer{
 		this.cleanIfExist();
 		this.checkAndAddRpcService();
 		this.addProviderServer();
+		//设置权重,默认100
+		this.doSetWehgit(getApplication(),this.getHost()+":"+this.getPort(),100,false);
 	}
 	
 	private void addProviderServer(){
@@ -223,5 +226,45 @@ public class ZkRpcServer extends RpcClusterServer{
 
 	public void setBaseSleepTime(int baseSleepTime) {
 		this.baseSleepTime = baseSleepTime;
+	}
+
+
+	private String genWeightKey(String application,String hostkey){
+		return "/weights/"+application+"/"+hostkey;
+	}
+
+	/**
+	 * 设置权重列表
+	 * @param application
+	 * @param key
+	 * @param weight
+	 * @param override
+	 */
+	private void doSetWehgit(String application,String key,int weight,boolean override){
+		String path = this.genWeightKey(application,key);
+		byte[] data = (""+weight).getBytes();
+			if(override){
+				try{
+					zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(path,data);
+				}catch(Exception e){
+					throw new RpcException(e);
+				}
+
+			}else{
+				try{
+					byte[] bytes = zkclient.getData().forPath(path);
+					if(bytes==null){
+						zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(path,data);
+					}
+				}catch(Exception e){
+					if(e instanceof KeeperException.NoNodeException){
+						try {
+							zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(path,data);
+						} catch (Exception e1) {
+							throw new RpcException(e1);
+						}
+					}
+				}
+			}
 	}
 }

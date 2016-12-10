@@ -1,5 +1,7 @@
 package com.linda.framework.rpc.cluster.hash;
 
+import com.linda.framework.rpc.cluster.RpcHostAndPort;
+
 import java.util.List;
 
 /**
@@ -10,6 +12,6 @@ import java.util.List;
  */
 public interface Hashing {
 	
-	public String hash(List<String> servers);
+	public String hash(List<RpcHostAndPort> servers);
 	
 }

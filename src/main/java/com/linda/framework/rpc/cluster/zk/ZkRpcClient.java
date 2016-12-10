@@ -56,7 +56,13 @@ public class ZkRpcClient extends RpcClusterClient {
 	public void setBaseSleepTime(int baseSleepTime) {
 		this.baseSleepTime = baseSleepTime;
 	}
-	
+
+	@Override
+	public <T> T register(Class<T> iface, String version, String group) {
+		this.checkExecutor();
+		return super.register(iface, version, group);
+	}
+
 	private void checkExecutor(){
 		if(zkRpcClientExecutor==null){
 			zkRpcClientExecutor = new ZkRpcClientExecutor();
@@ -68,6 +74,7 @@ public class ZkRpcClient extends RpcClusterClient {
 			zkRpcClientExecutor.setConnectTimeout(connectTimeout);
 			zkRpcClientExecutor.setMaxRetry(maxRetry);
 		}
+		super.setRemoteExecutor(zkRpcClientExecutor);
 	}
 
 	@Override

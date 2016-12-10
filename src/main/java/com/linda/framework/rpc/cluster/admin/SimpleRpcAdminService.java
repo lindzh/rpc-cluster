@@ -6,12 +6,13 @@ import java.util.List;
 import com.linda.framework.rpc.RpcService;
 import com.linda.framework.rpc.Service;
 import com.linda.framework.rpc.client.SimpleRpcClient;
+import com.linda.framework.rpc.cluster.HostWeight;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.monitor.RpcMonitorService;
 import com.linda.framework.rpc.net.AbstractRpcConnector;
 import com.linda.framework.rpc.serializer.RpcSerializer;
 
-public class SimpleRpcAdminService implements RpcAdminService, Service {
+public class SimpleRpcAdminService extends RpcAdminService implements Service {
 
 	private SimpleRpcClient client = new SimpleRpcClient();
 
@@ -82,5 +83,25 @@ public class SimpleRpcAdminService implements RpcAdminService, Service {
 	@Override
 	public void setSerializer(RpcSerializer serializer) {
 		client.setSerializer(serializer);
+	}
+
+	@Override
+	public List<HostWeight> getWeights(String application) {
+		List<HostWeight> list = new ArrayList<HostWeight>();
+		if(hosts.size()>0){
+			for(RpcHostAndPort host:hosts){
+				HostWeight hostWeight = new HostWeight();
+				hostWeight.setHost(host.getHost());
+				hostWeight.setPort(host.getPort());
+				hostWeight.setWeight(100);
+				list.add(hostWeight);
+			}
+		}
+		return list;
+	}
+
+	@Override
+	public void setWeight(String application, HostWeight weight) {
+		//do nothing
 	}
 }

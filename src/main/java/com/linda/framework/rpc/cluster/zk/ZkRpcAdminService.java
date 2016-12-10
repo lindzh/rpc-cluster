@@ -5,12 +5,13 @@ import java.util.List;
 import com.linda.framework.rpc.RpcService;
 import com.linda.framework.rpc.Service;
 import com.linda.framework.rpc.client.AbstractClientRemoteExecutor;
+import com.linda.framework.rpc.cluster.HostWeight;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.admin.RpcAdminService;
 import com.linda.framework.rpc.net.AbstractRpcConnector;
 import com.linda.framework.rpc.serializer.RpcSerializer;
 
-public class ZkRpcAdminService implements RpcAdminService, Service {
+public class ZkRpcAdminService extends RpcAdminService implements Service  {
 
 	private ZkRpcClient zkRpcClient = new ZkRpcClient();
 
@@ -66,5 +67,15 @@ public class ZkRpcAdminService implements RpcAdminService, Service {
 	@Override
 	public void setSerializer(RpcSerializer serializer) {
 		zkRpcClient.setSerializer(serializer);
+	}
+
+	@Override
+	public List<HostWeight> getWeights(String application) {
+		return this.getExecutor().getWeights(application);
+	}
+
+	@Override
+	public void setWeight(String application, HostWeight weight) {
+		this.getExecutor().setWeight(application, weight);
 	}
 }
