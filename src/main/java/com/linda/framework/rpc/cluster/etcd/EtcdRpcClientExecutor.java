@@ -1,22 +1,13 @@
 package com.linda.framework.rpc.cluster.etcd;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.linda.framework.rpc.cluster.*;
+import com.linda.framework.rpc.exception.RpcException;
 import org.apache.log4j.Logger;
 
 import com.linda.framework.rpc.RpcService;
-import com.linda.framework.rpc.cluster.AbstractRpcClusterClientExecutor;
-import com.linda.framework.rpc.cluster.JSONUtils;
-import com.linda.framework.rpc.cluster.MD5Utils;
-import com.linda.framework.rpc.cluster.RpcClusterUtils;
-import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.hash.Hashing;
 import com.linda.framework.rpc.cluster.hash.RoundRobinHashing;
 import com.linda.framework.rpc.net.RpcNetBase;
@@ -41,6 +32,12 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 	private Hashing hashing = new RoundRobinHashing();
 
 	private Logger logger = Logger.getLogger("rpcCluster");
+
+	private HashSet<ConsumeRpcObject> consumeServices = new HashSet<ConsumeRpcObject>();
+
+	private int ttl = 30000;
+
+	private Timer timer = new Timer();
 
 	private EtcdWatchCallback etcdServerWatcher = new EtcdWatchCallback() {
 		public void onChange(EtcdChangeResult future) {
@@ -107,11 +104,21 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 		this.fetchRpcServers(false);
 	}
 
+	private void startHeartBeat(){
+		timer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				EtcdRpcClientExecutor.this.doUpload();
+			}
+		},new Date(),ttl/3);
+	}
+
 	@Override
 	public void stopRpcCluster() {
 		rpcServersCache = null;
 		etcdClient.stop();
 		rpcServiceCache.clear();
+		timer.cancel();
 	}
 
 	@Override
@@ -241,8 +248,96 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 		this.etcdUrl = etcdUrl;
 	}
 
-	@Override
-	public <T> void doRegisterRemote(Class<T> iface, String version, String group) {
+	private String genConsumeKey(String group, String service, String version){
+		return group+"_"+service+"_"+version;
+	}
 
+	private String genServiceConsumeKey(String service){
+		return "/" + namespace + "/consumers/"+service;
+	}
+
+	private String genServiceApplicationConsumeKey(String service,String application){
+		return "/" + namespace + "/consumers/"+service+"/"+application;
+	}
+
+	private String genServiceComsumeHostKey(String service,String application,String host){
+		return "/" + namespace + "/consumers/"+service+"/"+application+"/"+host;
+	}
+
+	@Override
+	public <T> void doRegisterRemote(String application,Class<T> iface, String version, String group) {
+		String ip = this.getSelfIp();
+		ConsumeRpcObject object = new ConsumeRpcObject();
+		object.setApplication(application);
+		object.setIp(ip);
+		object.setGroup(group);
+		object.setClassName(iface.getName());
+		object.setVersion(version);
+
+		consumeServices.add(object);
+	}
+
+	private void doUpload(){
+		for(ConsumeRpcObject object:consumeServices){
+			String data = JSONUtils.toJSON(object);
+			String service = this.genConsumeKey(object.getGroup(),object.getClassName(),object.getVersion());
+			String hostDir = this.genServiceComsumeHostKey(service,object.getApplication(),object.getIp());
+			this.etcdClient.set(hostDir,data,ttl);
+		}
+	}
+
+	@Override
+	public List<String> getConsumeApplications(String group, String service, String version) {
+		String serviceKey = this.genConsumeKey(group, service, version);
+		String consumeDir = this.genServiceConsumeKey(serviceKey);
+		EtcdResult result = this.etcdClient.children(consumeDir, false, false);
+
+		if(result.isSuccess()){
+			ArrayList<String> applications = new ArrayList<String>();
+			List<EtcdNode> apps = result.getNode().getNodes();
+			for(EtcdNode node:apps){
+				String key = node.getKey();
+				applications.add(key);
+			}
+			return applications;
+		}else{
+			throw new RpcException(result.getCause());
+		}
+	}
+
+	/**
+	 * 遍历拿到列表
+	 * @param group
+	 * @param service
+	 * @param version
+     * @return
+     */
+	@Override
+	public List<ConsumeRpcObject> getConsumeObjects(String group, String service, String version) {
+		String serviceKey = this.genConsumeKey(group, service, version);
+		String consumeDir = this.genServiceConsumeKey(serviceKey);
+		EtcdResult result = this.etcdClient.children(consumeDir, true, false);
+
+		if(result.isSuccess()){
+			List<EtcdNode> apps = result.getNode().getNodes();
+			ArrayList<ConsumeRpcObject> list = new ArrayList<ConsumeRpcObject>();
+			for(EtcdNode app:apps){
+				if(app.isDir()){
+					List<EtcdNode> hosts = app.getNodes();
+					if(hosts!=null){
+						for(EtcdNode host:hosts){
+							if(!host.isDir()){
+								String conJson = host.getValue();
+								ConsumeRpcObject ccc = JSONUtils.fromJSON(conJson,ConsumeRpcObject.class);
+								list.add(ccc);
+							}
+						}
+					}
+				}
+			}
+			return list;
+		}else{
+			throw new RpcException(result.getCause());
+		}
 	}
 }

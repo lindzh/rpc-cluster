@@ -1,25 +1,18 @@
 package com.linda.framework.rpc.cluster.zk;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.linda.framework.rpc.cluster.*;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.log4j.Logger;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
 
 import com.linda.framework.rpc.RpcService;
-import com.linda.framework.rpc.cluster.AbstractRpcClusterClientExecutor;
-import com.linda.framework.rpc.cluster.JSONUtils;
-import com.linda.framework.rpc.cluster.MD5Utils;
-import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.hash.Hashing;
 import com.linda.framework.rpc.cluster.hash.RoundRobinHashing;
 import com.linda.framework.rpc.exception.RpcException;
@@ -44,6 +37,8 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	private List<RpcHostAndPort> rpcServersCache = new ArrayList<RpcHostAndPort>();
 
 	private Map<String, List<RpcService>> rpcServiceCache = new ConcurrentHashMap<String, List<RpcService>>();
+
+	private HashSet<ConsumeRpcObject> consumeServices = new HashSet<ConsumeRpcObject>();
 
 	private Hashing hashing = new RoundRobinHashing();
 
@@ -251,8 +246,12 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 
 	@Override
 	public void startRpcCluster() {
+		//启动zk
 		this.initZk();
+		//获取机器和服务列表
 		this.fetchRpcServers(false);
+		//上报消费
+		this.doUpload();
 	}
 
 	@Override
@@ -325,7 +324,69 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	}
 
 	@Override
-	public <T> void doRegisterRemote(Class<T> iface, String version, String group) {
+	public <T> void doRegisterRemote(String application,Class<T> iface, String version, String group) {
+		String ip = this.getSelfIp();
+		ConsumeRpcObject consumeObject = new ConsumeRpcObject();
+		consumeObject.setApplication(application);
+		consumeObject.setGroup(group);
+		consumeObject.setClassName(iface.getName());
+		consumeObject.setVersion(version);
+		consumeObject.setIp(ip);
+		consumeServices.add(consumeObject);
+	}
 
+	public List<String> getConsumeApplications(String group,String service,String version){
+		String serviceDirName = group+"_"+service+"_"+version;
+		String consumerBase = "/consumers/"+serviceDirName;
+		try {
+			return zkclient.getChildren().forPath(consumerBase);
+		} catch (Exception e) {
+			throw new RpcException(e);
+		}
+	}
+
+	public List<ConsumeRpcObject> getConsumeObjects(String group,String service,String version){
+		List<ConsumeRpcObject> consumers = new ArrayList<ConsumeRpcObject>();
+		String serviceDirName = group+"_"+service+"_"+version;
+		String consumerBase = "/consumers/"+serviceDirName;
+		List<String> apps = this.getConsumeApplications(group, service, version);
+		for(String app:apps){
+			String hostipDir = consumerBase+"/"+app;
+			try {
+				List<String> hosts = zkclient.getChildren().forPath(hostipDir);
+				for(String host:hosts){
+					ConsumeRpcObject con = new ConsumeRpcObject();
+					con.setIp(host);
+					con.setVersion(version);
+					con.setClassName(service);
+					con.setGroup(group);
+					con.setApplication(app);
+					consumers.add(con);
+				}
+			} catch (Exception e) {
+				throw new RpcException(e);
+			}
+		}
+		return consumers;
+	}
+
+	/**
+	 * 消费者信息上传到注册中心
+	 */
+	private void doUpload(){
+		if(consumeServices.size()>0){
+			for(ConsumeRpcObject rpc:consumeServices){
+				//group service version
+				String service = rpc.getGroup()+"_"+rpc.getClassName()+"_"+rpc.getVersion();
+				try {
+					//当前机器临时节点
+					String host = "/consumers/"+service+"/"+rpc.getApplication()+"/"+rpc.getIp();
+					byte[] data = JSONUtils.toJSON(rpc).getBytes();
+					zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(host,data);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 }

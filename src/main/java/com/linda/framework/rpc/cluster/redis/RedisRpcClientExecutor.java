@@ -11,18 +11,12 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.linda.framework.rpc.cluster.*;
 import org.apache.log4j.Logger;
 
 import redis.clients.jedis.Jedis;
 
 import com.linda.framework.rpc.RpcService;
-import com.linda.framework.rpc.cluster.AbstractRpcClusterClientExecutor;
-import com.linda.framework.rpc.cluster.JSONUtils;
-import com.linda.framework.rpc.cluster.MD5Utils;
-import com.linda.framework.rpc.cluster.MessageListener;
-import com.linda.framework.rpc.cluster.RpcClusterConst;
-import com.linda.framework.rpc.cluster.RpcHostAndPort;
-import com.linda.framework.rpc.cluster.RpcMessage;
 import com.linda.framework.rpc.cluster.hash.Hashing;
 import com.linda.framework.rpc.cluster.hash.RoundRobinHashing;
 import com.linda.framework.rpc.net.RpcNetBase;
@@ -51,6 +45,8 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 	private Map<String,Long> heartBeanTimeCache = new ConcurrentHashMap<String,Long>();
 	
 	private SimpleJedisPubListener pubsubListener = new SimpleJedisPubListener();
+
+	private HashSet<ConsumeRpcObject> consumeServices = new HashSet<ConsumeRpcObject>();
 	
 	private Hashing hashing = new RoundRobinHashing();
 	
@@ -98,6 +94,7 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		this.startHeartBeat();
 		this.fetchRpcServers();
 		this.fetchRpcServices();
+		this.doUpload();
 	}
 	
 	private void startPubsubListener(){
@@ -110,6 +107,7 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 
 	@Override
 	public void stopRpcCluster() {
+		this.doDeleteConsumes();
 		this.stopHeartBeat();
 		jedisPool.stopService();
 		rpcServersCache = null;
@@ -275,7 +273,98 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 	}
 
 	@Override
-	public <T> void doRegisterRemote(Class<T> iface, String version, String group) {
+	public <T> void doRegisterRemote(String application,Class<T> iface, String version, String group) {
+		String ip = this.getSelfIp();
+		ConsumeRpcObject consumeObject = new ConsumeRpcObject();
+		consumeObject.setApplication(application);
+		consumeObject.setGroup(group);
+		consumeObject.setClassName(iface.getName());
+		consumeObject.setVersion(version);
+		consumeObject.setIp(ip);
+		consumeServices.add(consumeObject);
+	}
 
+	private String genServiceConsumeAppsKey(String group, String service, String version){
+		return this.namespace+"_consumers_"+group+"_"+service+"_"+version;
+	}
+
+	private String genServiceConsumeAppHostKey(String group, String service, String version,String app){
+		return this.namespace+"_consumers_"+app+"_hosts_"+group+"_"+service+"_"+version;
+	}
+
+	/**
+	 * 机器下线需要清除当前机器
+	 */
+	private void doDeleteConsumes(){
+		for(final ConsumeRpcObject obj:consumeServices){
+			final String consumeServiceAppHostkey = this.genServiceConsumeAppHostKey(obj.getGroup(),obj.getClassName(),obj.getVersion(),obj.getApplication());
+			RedisUtils.executeRedisCommand(this.jedisPool, new JedisCallback() {
+				@Override
+				public Object callback(Jedis jedis) {
+					jedis.srem(consumeServiceAppHostkey,obj.getIp());
+					return "1";
+				}
+			});
+		}
+	}
+
+	private void doUpload(){
+		for(final ConsumeRpcObject obj:consumeServices){
+			final String serviceConsumeAppsKey = this.genServiceConsumeAppsKey(obj.getGroup(),obj.getClassName(),obj.getVersion());
+			final String consumeServiceAppHostkey = this.genServiceConsumeAppHostKey(obj.getGroup(),obj.getClassName(),obj.getVersion(),obj.getApplication());
+			RedisUtils.executeRedisCommand(this.jedisPool, new JedisCallback() {
+				@Override
+				public Object callback(Jedis jedis) {
+					jedis.sadd(serviceConsumeAppsKey,obj.getApplication());
+					return "1";
+				}
+			});
+			RedisUtils.executeRedisCommand(this.jedisPool, new JedisCallback() {
+				@Override
+				public Object callback(Jedis jedis) {
+					jedis.sadd(consumeServiceAppHostkey,obj.getIp());
+					return "1";
+				}
+			});
+		}
+	}
+
+	@Override
+	public List<String> getConsumeApplications(String group, String service, String version) {
+		final String serviceConsumeAppKey = this.genServiceConsumeAppsKey(group, service, version);
+		Object result = RedisUtils.executeRedisCommand(jedisPool, new JedisCallback() {
+			@Override
+			public Object callback(Jedis jedis) {
+				Set<String> smembers = jedis.smembers(serviceConsumeAppKey);
+				return smembers;
+			}
+		});
+		Set<String> apps = (Set<String>)result;
+		return new ArrayList<String>(apps);
+	}
+
+	@Override
+	public List<ConsumeRpcObject> getConsumeObjects(String group, String service, String version) {
+		ArrayList<ConsumeRpcObject> list = new ArrayList<ConsumeRpcObject>();
+		List<String> apps = this.getConsumeApplications(group, service, version);
+		for(String app:apps){
+			final String appHostKey = this.genServiceConsumeAppHostKey(group,service,version,app);
+			Object result = RedisUtils.executeRedisCommand(jedisPool, new JedisCallback() {
+				@Override
+				public Object callback(Jedis jedis) {
+					ArrayList<ConsumeRpcObject> objects = new ArrayList<ConsumeRpcObject>();
+					Set<String> smembers = jedis.smembers(appHostKey);
+					if(smembers!=null){
+						for(String mm:smembers){
+							ConsumeRpcObject cc = JSONUtils.fromJSON(mm,ConsumeRpcObject.class);
+							objects.add(cc);
+						}
+					}
+					return objects;
+				}
+			});
+			list.addAll((List<ConsumeRpcObject>)result);
+		}
+		return list;
 	}
 }
