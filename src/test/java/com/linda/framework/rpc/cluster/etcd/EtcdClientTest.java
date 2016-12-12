@@ -2,15 +2,17 @@ package com.linda.framework.rpc.cluster.etcd;
 
 import com.linda.framework.rpc.cluster.HelloRpcService;
 import com.linda.framework.rpc.cluster.serializer.ProtostuffSerializer;
+import com.linda.framework.rpc.cluster.serializer.simple.SimpleSerializer;
 
 public class EtcdClientTest {
 	
 	public static void main(String[] args) {
 		
 		EtcdRpcClient client = new EtcdRpcClient();
-		client.setEtcdUrl("http://192.168.139.129:2911");
-		client.setNamespace("lindezhi");
-		client.setSerializer(new ProtostuffSerializer());
+		client.setEtcdUrl("http://127.0.0.1:2379");
+		client.setNamespace("myapp");
+		client.setApplication("test");
+		client.setSerializer(new SimpleSerializer());
 		client.startService();
 		HelloRpcService rpcService = client.register(HelloRpcService.class);
 		

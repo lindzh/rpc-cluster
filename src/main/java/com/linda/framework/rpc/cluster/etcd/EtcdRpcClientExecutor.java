@@ -106,6 +106,7 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 		this.etcdClient = new EtcdClient(etcdUrl);
 		etcdClient.start();
 		this.fetchRpcServers(false);
+		this.doUpload();
 	}
 
 	private void startHeartBeat(){
@@ -279,15 +280,23 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 		object.setVersion(version);
 
 		consumeServices.add(object);
+
+		if(this.etcdClient!=null){
+			this.doUpload(object);
+		}
 	}
 
 	private void doUpload(){
 		for(ConsumeRpcObject object:consumeServices){
-			String data = JSONUtils.toJSON(object);
-			String service = this.genConsumeKey(object.getGroup(),object.getClassName(),object.getVersion());
-			String hostDir = this.genServiceComsumeHostKey(service,object.getApplication(),object.getIp());
-			this.etcdClient.set(hostDir,data,ttl);
+			this.doUpload();
 		}
+	}
+
+	private void doUpload(ConsumeRpcObject object){
+		String data = JSONUtils.toJSON(object);
+		String service = this.genConsumeKey(object.getGroup(),object.getClassName(),object.getVersion());
+		String hostDir = this.genServiceComsumeHostKey(service,object.getApplication(),object.getIp());
+		this.etcdClient.set(hostDir,data,ttl);
 	}
 
 	@Override
@@ -389,6 +398,8 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 				for(EtcdNode wnode:nodes){
 					String key = wnode.getKey();
 					String value = wnode.getValue();
+					key = key.substring(key.lastIndexOf('/')+1);
+					System.out.println("key:"+key);
 					String[] hostport = key.split(":");
 					HostWeight hostWeight = new HostWeight();
 					hostWeight.setHost(hostport[0]);

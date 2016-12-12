@@ -42,6 +42,7 @@ public abstract class Hashing {
      */
 	public String hash(List<RpcHostAndPort> servers){
 		if(servers!=null){
+			System.out.println(JSONUtils.toJSON(servers));
 			List<RpcHostAndPort> fServers = this.filterServers(servers);
 			if(fServers.size()<1){
 				throw new RpcException("no provider use for the request weight limited");

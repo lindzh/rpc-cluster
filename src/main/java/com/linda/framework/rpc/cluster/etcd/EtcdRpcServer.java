@@ -101,6 +101,7 @@ public class EtcdRpcServer extends RpcClusterServer {
 	private void cleanIfExist() {
 		// 删除server
 		String serverKey = this.genServerKey();
+		//null
 		this.etcdClient.del(serverKey);
 		// 删除server的service列表
 		String serverServiceKey = this.genServerServiceKey();

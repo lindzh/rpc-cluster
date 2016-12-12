@@ -7,15 +7,17 @@ import com.linda.framework.rpc.cluster.HelloRpcTestServiceImpl;
 import com.linda.framework.rpc.cluster.LoginRpcService;
 import com.linda.framework.rpc.cluster.LoginRpcServiceImpl;
 import com.linda.framework.rpc.cluster.serializer.ProtostuffSerializer;
+import com.linda.framework.rpc.cluster.serializer.simple.SimpleSerializer;
 
 public class EtcdServerTest {
 	
 	public static void main(String[] args) {
 		
 		EtcdRpcServer rpcServer = new EtcdRpcServer();
-		rpcServer.setEtcdUrl("http://192.168.139.129:2911");
-		rpcServer.setNamespace("myapp-mymodule");
-		rpcServer.setSerializer(new ProtostuffSerializer());
+		rpcServer.setEtcdUrl("http://127.0.0.1:2379");
+		rpcServer.setNamespace("myapp");
+		rpcServer.setApplication("simple");
+		rpcServer.setSerializer(new SimpleSerializer());
 		rpcServer.setPort(3351);
 		rpcServer.register(HelloRpcService.class, new HelloRpcServiceImpl());
 		rpcServer.register(LoginRpcService.class, new LoginRpcServiceImpl());
