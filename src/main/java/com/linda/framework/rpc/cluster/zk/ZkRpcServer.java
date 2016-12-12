@@ -64,8 +64,10 @@ public class ZkRpcServer extends RpcClusterServer{
 	
 	@Override
 	public void onClose(RpcNetBase network, Exception e) {
-		this.cleanIfExist();
-		this.zkclient.close();
+		if(zkclient!=null){
+			this.cleanIfExist();
+			this.zkclient.close();
+		}
 	}
 
 	@Override
