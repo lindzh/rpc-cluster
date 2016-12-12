@@ -1,5 +1,6 @@
 package com.linda.framework.rpc.cluster.hash;
 
+import com.linda.framework.rpc.cluster.JSONUtils;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.exception.RpcException;
 
@@ -40,6 +41,7 @@ public abstract class Hashing {
 	 * @return
      */
 	public String hash(List<RpcHostAndPort> servers){
+		System.out.println(JSONUtils.toJSON(servers));
 		if(servers!=null){
 			List<RpcHostAndPort> fServers = this.filterServers(servers);
 			if(fServers.size()<1){

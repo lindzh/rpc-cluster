@@ -19,6 +19,7 @@ import com.linda.framework.rpc.cluster.hash.Hashing;
 import com.linda.framework.rpc.cluster.hash.RoundRobinHashing;
 import com.linda.framework.rpc.exception.RpcException;
 import com.linda.framework.rpc.net.RpcNetBase;
+import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 
 public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
@@ -48,6 +49,8 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	private Hashing hashing = new RoundRobinHashing();
 
 	private Logger logger = Logger.getLogger("rpcCluster");
+
+	private Random random = new Random();
 	
 	//add timer to execute fetch all task
 	private Timer timer = new Timer();
@@ -413,20 +416,27 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 
 	private void watchWeight(final String application){
 
+		System.out.println("watch---------"+application);
 		String applicationWeightsKey = this.genApplicationWeightsKey(application);
 		try{
-			zkclient.getChildren().usingWatcher(new CuratorWatcher() {
+			zkclient.getData().usingWatcher(new CuratorWatcher() {
 				@Override
 				public void process(WatchedEvent watchedEvent) throws Exception {
-					//拿到权重列表
-					getWeights(application);
-					//继续watch
-					watchWeight(application);
+					System.out.println("callback:--------watch");
+					if(watchedEvent.getType()== Watcher.Event.EventType.NodeDataChanged){
+						//拿到权重列表
+						doGetWeights(application,true);
+					}
 				}
 			}).inBackground().forPath(applicationWeightsKey);
 		}catch(Exception e){
 			logger.error("[zookeeper] watch "+applicationWeightsKey,e);
 		}
+	}
+
+	@Override
+	public List<HostWeight> getWeights(String application) {
+		return this.doGetWeights(application,false);
 	}
 
 	/**
@@ -435,12 +445,15 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	 * @return
 	 * 从缓存获取
      */
-	@Override
-	public List<HostWeight> getWeights(String application) {
-		List<HostWeight> weights = applicationWeightMap.get(application);
-		if(weights!=null){
-			return weights;
+	public List<HostWeight> doGetWeights(String application,boolean fromRegister) {
+		if(!fromRegister){
+			List<HostWeight> weights = applicationWeightMap.get(application);
+			if(weights!=null){
+				return weights;
+			}
 		}
+
+		System.out.println("getwaight:============="+application);
 
 		String weightsKey = this.genApplicationWeightsKey(application);
 		ArrayList<HostWeight> result = new ArrayList<HostWeight>();
@@ -468,6 +481,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 		}
 		//监控数据变化
 		this.watchWeight(application);
+
 		applicationWeightMap.put(application,result);
 		return result;
 	}
@@ -511,6 +525,16 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 					}
 				}
 			}
+		}
+		//通过weight app data通知
+		//notify change
+		String applicationWeightsKey = this.genApplicationWeightsKey(application);
+		int idx = this.random.nextInt(100000000);
+		byte[] appData = (application+"_"+idx).getBytes();
+		try {
+			zkclient.setData().forPath(applicationWeightsKey,appData);
+		} catch (Exception e) {
+			throw new RpcException(e);
 		}
 	}
 
