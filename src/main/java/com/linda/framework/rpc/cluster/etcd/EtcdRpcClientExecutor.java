@@ -29,6 +29,8 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 
 	private Map<String, List<RpcService>> rpcServiceCache = new ConcurrentHashMap<String, List<RpcService>>();
 
+	private Map<String,List<HostWeight>> applicationWeightMap = new HashMap<String,List<HostWeight>>();
+
 	private Hashing hashing = new RoundRobinHashing();
 
 	private Logger logger = Logger.getLogger("rpcCluster");
@@ -38,6 +40,8 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 	private int ttl = 30000;
 
 	private Timer timer = new Timer();
+
+	private Random random = new Random();
 
 	private EtcdWatchCallback etcdServerWatcher = new EtcdWatchCallback() {
 		public void onChange(EtcdChangeResult future) {
@@ -341,13 +345,82 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 		}
 	}
 
+	private String genApplicationWeightkey(String application){
+		return "/"+namespace+"/weight/"+application+"/weights";
+	}
+
+	private String genApplicationWeightWatchKey(String application){
+		return "/"+namespace+"/weight/"+application+"/node";
+	}
+
+	private String genApplicationWeightHostkey(String application,String hostkey){
+		return "/"+namespace+"/weight/"+application+"/weights/"+hostkey;
+	}
+
+	private void watchApplication(final String application){
+		String applicationWeightWatchKey = this.genApplicationWeightWatchKey(application);
+		this.etcdClient.watch(applicationWeightWatchKey, new EtcdWatchCallback() {
+			@Override
+			public void onChange(EtcdChangeResult future) {
+				doGetWeights(application,true);
+			}
+		});
+	}
+
 	@Override
 	public List<HostWeight> getWeights(String application) {
-		return null;
+		return this.doGetWeights(application,false);
+	}
+
+	private List<HostWeight> doGetWeights(String application,boolean force){
+		if(!force){
+			List<HostWeight> hostWeights = this.applicationWeightMap.get(application);
+			if(hostWeights!=null){
+				return hostWeights;
+			}
+		}
+
+		ArrayList<HostWeight> list = new ArrayList<HostWeight>();
+		EtcdResult children = this.etcdClient.children(this.genApplicationWeightkey(application), false, false);
+		if(children.isSuccess()&&children.getNode()!=null){
+			EtcdNode etcdNode = children.getNode();
+			List<EtcdNode> nodes = etcdNode.getNodes();
+			if(nodes!=null&&nodes.size()>0){
+				for(EtcdNode wnode:nodes){
+					String key = wnode.getKey();
+					String value = wnode.getValue();
+					String[] hostport = key.split(":");
+					HostWeight hostWeight = new HostWeight();
+					hostWeight.setHost(hostport[0]);
+					hostWeight.setPort(Integer.parseInt(hostport[1]));
+					hostWeight.setWeight(Integer.parseInt(value));
+					list.add(hostWeight);
+				}
+			}
+		}
+
+		this.applicationWeightMap.put(application,list);
+
+		this.watchApplication(application);
+		return list;
 	}
 
 	private void doSetWehgit(String application,String key,int weight,boolean override){
-
+		String hostWeightKey = this.genApplicationWeightHostkey(application,key);
+		String value = ""+weight;
+		if(override){
+			this.etcdClient.set(hostWeightKey,value);
+		}else{
+			EtcdResult result = this.etcdClient.get(hostWeightKey);
+			if(result.isSuccess()){
+				return;
+			}
+			//是否存在
+			this.etcdClient.set(hostWeightKey,value);
+		}
+		//notify change
+		String weightWatchKey = this.genApplicationWeightWatchKey(application);
+		this.etcdClient.set(weightWatchKey,"weight_"+random.nextInt(10000000));
 	}
 
 	@Override

@@ -1,11 +1,8 @@
 package com.linda.framework.rpc.cluster.etcd;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
+import com.linda.jetcd.EtcdResult;
 import org.apache.log4j.Logger;
 
 import com.linda.framework.rpc.RpcService;
@@ -53,6 +50,8 @@ public class EtcdRpcServer extends RpcClusterServer {
 		return "/"+namespace+"/services/" + this.serverMd5;
 	}
 
+	private Random random = new Random();
+
 	private String genServiceKey(String serviceMd5) {
 		return "/"+namespace+"/services/" + this.serverMd5 + "/" + serviceMd5;
 	}
@@ -82,6 +81,8 @@ public class EtcdRpcServer extends RpcClusterServer {
 		this.network = network;
 		this.checkAndAddRpcService();
 		this.startHeartBeat();
+
+		this.doSetWehgit(getApplication(),this.getHost()+":"+this.getPort(),100,false);
 	}
 
 	private void stopHeartBeat() {
@@ -191,6 +192,32 @@ public class EtcdRpcServer extends RpcClusterServer {
 
 	public void setEtcdUrl(String etcdUrl) {
 		this.etcdUrl = etcdUrl;
+	}
+
+	private void doSetWehgit(String application,String key,int weight,boolean override){
+		String hostWeightKey = this.genApplicationWeightHostkey(application,key);
+		String value = ""+weight;
+		if(override){
+			this.etcdClient.set(hostWeightKey,value);
+		}else{
+			EtcdResult result = this.etcdClient.get(hostWeightKey);
+			if(result.isSuccess()){
+				return;
+			}
+			//是否存在
+			this.etcdClient.set(hostWeightKey,value);
+		}
+		//notify change
+		String weightWatchKey = this.genApplicationWeightWatchKey(application);
+		this.etcdClient.set(weightWatchKey,"weight_"+random.nextInt(10000000));
+	}
+
+	private String genApplicationWeightWatchKey(String application){
+		return "/"+namespace+"/weight/"+application+"/node";
+	}
+
+	private String genApplicationWeightHostkey(String application,String hostkey){
+		return "/"+namespace+"/weight/"+application+"/weights/"+hostkey;
 	}
 
 }

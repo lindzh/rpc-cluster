@@ -2,6 +2,7 @@ package com.linda.framework.rpc.cluster.zk;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -61,6 +62,8 @@ public class ZkRpcServer extends RpcClusterServer{
 	private String genServiceKey(String serviceMd5) {
 		return "/services/" + this.serverMd5 + "/" + serviceMd5;
 	}
+
+	private Random random = new Random();
 	
 	@Override
 	public void onClose(RpcNetBase network, Exception e) {
@@ -235,6 +238,10 @@ public class ZkRpcServer extends RpcClusterServer{
 		return "/weights/"+application+"/"+hostkey;
 	}
 
+	private String genApplicationWeightsKey(String application){
+		return "/weights/"+application;
+	}
+
 	/**
 	 * 设置权重列表
 	 * @param application
@@ -245,19 +252,20 @@ public class ZkRpcServer extends RpcClusterServer{
 	private void doSetWehgit(String application,String key,int weight,boolean override){
 		String path = this.genWeightKey(application,key);
 		byte[] data = (""+weight).getBytes();
-			if(override){
+		if(override){
 				try{
 					zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(path,data);
 				}catch(Exception e){
 					throw new RpcException(e);
 				}
 
-			}else{
+		}else{
 				try{
 					byte[] bytes = zkclient.getData().forPath(path);
 					if(bytes==null){
 						zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(path,data);
 					}
+					return;
 				}catch(Exception e){
 					if(e instanceof KeeperException.NoNodeException){
 						try {
@@ -267,6 +275,16 @@ public class ZkRpcServer extends RpcClusterServer{
 						}
 					}
 				}
-			}
+		}
+		//通过weight app data通知
+		//notify change
+		String applicationWeightsKey = this.genApplicationWeightsKey(application);
+		int idx = this.random.nextInt(100000000);
+		byte[] appData = (application+"_"+idx).getBytes();
+		try {
+			zkclient.setData().forPath(applicationWeightsKey,appData);
+		} catch (Exception e) {
+			throw new RpcException(e);
+		}
 	}
 }

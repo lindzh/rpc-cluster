@@ -20,7 +20,6 @@ import com.linda.framework.rpc.cluster.hash.RoundRobinHashing;
 import com.linda.framework.rpc.exception.RpcException;
 import com.linda.framework.rpc.net.RpcNetBase;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.data.Stat;
 
 public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	
