@@ -41,7 +41,6 @@ public abstract class Hashing {
 	 * @return
      */
 	public String hash(List<RpcHostAndPort> servers){
-		System.out.println(JSONUtils.toJSON(servers));
 		if(servers!=null){
 			List<RpcHostAndPort> fServers = this.filterServers(servers);
 			if(fServers.size()<1){
@@ -51,7 +50,6 @@ public abstract class Hashing {
 				return fServers.get(0).toString();
 			}
 			String result = this.doHash(fServers);
-			System.out.println("select :"+result);
 			return result;
 		}else{
 			throw new RpcException("no provider use for the request,no servers");

@@ -416,13 +416,11 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 
 	private void watchWeight(final String application){
 
-		System.out.println("watch---------"+application);
 		String applicationWeightsKey = this.genApplicationWeightsKey(application);
 		try{
 			zkclient.getData().usingWatcher(new CuratorWatcher() {
 				@Override
 				public void process(WatchedEvent watchedEvent) throws Exception {
-					System.out.println("callback:--------watch");
 					if(watchedEvent.getType()== Watcher.Event.EventType.NodeDataChanged){
 						//拿到权重列表
 						doGetWeights(application,true);
@@ -452,8 +450,6 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 				return weights;
 			}
 		}
-
-		System.out.println("getwaight:============="+application);
 
 		String weightsKey = this.genApplicationWeightsKey(application);
 		ArrayList<HostWeight> result = new ArrayList<HostWeight>();
