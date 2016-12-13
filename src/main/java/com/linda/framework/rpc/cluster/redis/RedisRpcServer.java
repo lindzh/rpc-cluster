@@ -178,6 +178,8 @@ public class RedisRpcServer extends RpcClusterServer{
 		jedisPool.startService();
 		final RpcHostAndPort andPort = new RpcHostAndPort(network.getHost(), network.getPort());
 		andPort.setTime(time);
+		andPort.setToken(this.getToken());
+
 		final String json = JSONUtils.toJSON(andPort);
 		String str = network.getHost() + "_" + network.getPort();
 		this.serverMd5 = MD5Utils.md5(str);

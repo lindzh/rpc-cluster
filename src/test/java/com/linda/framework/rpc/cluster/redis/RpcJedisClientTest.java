@@ -11,12 +11,16 @@ public class RpcJedisClientTest {
 
 	public static void main(String[] args) throws InterruptedException {
 		RedisRpcClient rpcClient = new RedisRpcClient();
-		rpcClient.setRedisHost("192.168.139.129");
-		rpcClient.setRedisPort(7770);
-		rpcClient.startService();
+		rpcClient.setRedisHost("127.0.0.1");
+		rpcClient.setRedisPort(6379);
+
+		rpcClient.setApplication("gagaag");
 		HelloRpcTestService helloRpcTestService = rpcClient.register(HelloRpcTestService.class);
 		HelloRpcService helloRpcService = rpcClient.register(HelloRpcService.class);
 		LoginRpcService loginRpcService = rpcClient.register(LoginRpcService.class);
+
+		rpcClient.startService();
+
 		int idx = 1000;
 		while(true){
 			boolean login = loginRpcService.login("linda", "123456");

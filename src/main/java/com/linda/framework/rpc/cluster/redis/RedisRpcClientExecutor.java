@@ -437,6 +437,10 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		if(result!=null){
 			hostWeights = (List<HostWeight>)result;
 			applicationWeightMap.put(application,hostWeights);
+		}else{
+			if(hostWeights==null){
+				hostWeights = new ArrayList<HostWeight>();
+			}
 		}
 		return hostWeights;
 	}
