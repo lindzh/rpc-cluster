@@ -1,14 +1,6 @@
 package com.linda.framework.rpc.cluster.redis;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.linda.framework.rpc.cluster.*;
@@ -41,6 +33,8 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 	private Set<String> serverMd5s = new HashSet<String>();
 	
 	private Map<String,List<RpcService>> rpcServiceCache = new ConcurrentHashMap<String, List<RpcService>>();
+
+	private Map<String,List<HostWeight>> applicationWeightMap = new HashMap<String,List<HostWeight>>();
 	
 	private Map<String,Long> heartBeanTimeCache = new ConcurrentHashMap<String,Long>();
 	
@@ -63,6 +57,8 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 	public RpcJedisDelegatePool getJedisPool() {
 		return jedisPool;
 	}
+
+	private boolean started = false;
 
 	public void setJedisPool(RpcJedisDelegatePool jedisPool) {
 		this.jedisPool = jedisPool;
@@ -95,6 +91,7 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		this.fetchRpcServers();
 		this.fetchRpcServices();
 		this.doUpload();
+		started = true;
 	}
 	
 	private void startPubsubListener(){
@@ -107,6 +104,7 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 
 	@Override
 	public void stopRpcCluster() {
+		started = false;
 		this.doDeleteConsumes();
 		this.stopHeartBeat();
 		jedisPool.stopService();
@@ -282,6 +280,10 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		consumeObject.setVersion(version);
 		consumeObject.setIp(ip);
 		consumeServices.add(consumeObject);
+
+		if(started){
+			this.doUpload(consumeObject);
+		}
 	}
 
 	private String genServiceConsumeAppsKey(String group, String service, String version){
@@ -308,24 +310,28 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		}
 	}
 
+	private void doUpload(final ConsumeRpcObject obj){
+		final String serviceConsumeAppsKey = this.genServiceConsumeAppsKey(obj.getGroup(),obj.getClassName(),obj.getVersion());
+		final String consumeServiceAppHostkey = this.genServiceConsumeAppHostKey(obj.getGroup(),obj.getClassName(),obj.getVersion(),obj.getApplication());
+		RedisUtils.executeRedisCommand(this.jedisPool, new JedisCallback() {
+			@Override
+			public Object callback(Jedis jedis) {
+				jedis.sadd(serviceConsumeAppsKey,obj.getApplication());
+				return "1";
+			}
+		});
+		RedisUtils.executeRedisCommand(this.jedisPool, new JedisCallback() {
+			@Override
+			public Object callback(Jedis jedis) {
+				jedis.sadd(consumeServiceAppHostkey,obj.getIp());
+				return "1";
+			}
+		});
+	}
+
 	private void doUpload(){
 		for(final ConsumeRpcObject obj:consumeServices){
-			final String serviceConsumeAppsKey = this.genServiceConsumeAppsKey(obj.getGroup(),obj.getClassName(),obj.getVersion());
-			final String consumeServiceAppHostkey = this.genServiceConsumeAppHostKey(obj.getGroup(),obj.getClassName(),obj.getVersion(),obj.getApplication());
-			RedisUtils.executeRedisCommand(this.jedisPool, new JedisCallback() {
-				@Override
-				public Object callback(Jedis jedis) {
-					jedis.sadd(serviceConsumeAppsKey,obj.getApplication());
-					return "1";
-				}
-			});
-			RedisUtils.executeRedisCommand(this.jedisPool, new JedisCallback() {
-				@Override
-				public Object callback(Jedis jedis) {
-					jedis.sadd(consumeServiceAppHostkey,obj.getIp());
-					return "1";
-				}
-			});
+			this.doUpload(obj);
 		}
 	}
 
@@ -368,17 +374,101 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		return list;
 	}
 
-	@Override
-	public List<HostWeight> getWeights(String application) {
-		return null;
+	private String genApplicationServerWeightKey(String application){
+		return this.namespace+"_weight_hosts_"+application;
 	}
 
-	private void doSetWehgit(String application,String key,int weight,boolean override){
+	private String genApplicationHostWeightKey(String application,String key){
+		return this.namespace+"_weight_data_"+application+"_host_"+key;
+	}
 
+	/**
+	 * 定时获取application 权重列表
+	 * @param application
+     */
+	private void watch(final String application){
+		timer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				doGetWeights(application,true);
+			}
+		},checkTtl*3);
+	}
+
+	/**
+	 * 获取权重列表
+	 * @param application
+	 * @param fromRegister
+     * @return
+     */
+	private List<HostWeight> doGetWeights(final String application, boolean fromRegister){
+		List<HostWeight> hostWeights = applicationWeightMap.get(application);
+		if(!fromRegister&&hostWeights!=null&&hostWeights.size()>0){
+			return hostWeights;
+		}
+
+		final String applicationServerWeightKey = this.genApplicationServerWeightKey(application);
+		Object result = RedisUtils.executeRedisCommand(jedisPool, new JedisCallback() {
+			@Override
+			public Object callback(Jedis jedis) {
+				ArrayList<HostWeight> result = new ArrayList<HostWeight>();
+				Set<String> hosts = jedis.smembers(applicationServerWeightKey);
+				if(hosts!=null&&hosts.size()>0){
+					List<String> hostWeightKeys = new ArrayList<String>(hosts.size());
+					for(String host:hosts){
+						String hostWeightKey = genApplicationHostWeightKey(application, host);
+						hostWeightKeys.add(hostWeightKey);
+					}
+
+					List<String> list = jedis.mget(hostWeightKeys.toArray(new String[0]));
+					if(list!=null&&list.size()>0){
+						for(String ww:list){
+							HostWeight hostWeight = JSONUtils.fromJSON(ww, HostWeight.class);
+							result.add(hostWeight);
+						}
+					}
+				}
+				return result;
+			}
+		});
+
+		this.watch(application);
+
+		if(result!=null){
+			hostWeights = (List<HostWeight>)result;
+			applicationWeightMap.put(application,hostWeights);
+		}
+		return hostWeights;
+	}
+
+	@Override
+	public List<HostWeight> getWeights(String application) {
+		return this.doGetWeights(application,false);
+	}
+
+	private void doSetWeight(final String application,final HostWeight weight,final boolean override){
+		final String applicationServerWeightKey = this.genApplicationServerWeightKey(application);
+		final String hostWeightKey = this.genApplicationHostWeightKey(application, weight.getKey());
+		final String weightData = JSONUtils.toJSON(weight);
+		RedisUtils.executeRedisCommand(jedisPool, new JedisCallback() {
+			@Override
+			public Object callback(Jedis jedis) {
+				String weightValue = jedis.get(hostWeightKey);
+				if(weightValue!=null){
+					if(override){
+						jedis.set(hostWeightKey,weightData);
+					}
+				}else{
+					jedis.set(hostWeightKey,weightData);
+					jedis.sadd(applicationServerWeightKey,weight.getKey());
+				}
+				return null;
+			}
+		});
 	}
 
 	@Override
 	public void setWeight(String application, HostWeight weight) {
-		this.doSetWehgit(application,weight.getKey(),weight.getWeight(),true);
+		this.doSetWeight(application,weight,true);
 	}
 }

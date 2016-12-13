@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.linda.framework.rpc.cluster.*;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.log4j.Logger;
 
@@ -14,12 +15,6 @@ import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.Jedis;
 
 import com.linda.framework.rpc.RpcService;
-import com.linda.framework.rpc.cluster.JSONUtils;
-import com.linda.framework.rpc.cluster.MD5Utils;
-import com.linda.framework.rpc.cluster.RpcClusterConst;
-import com.linda.framework.rpc.cluster.RpcClusterServer;
-import com.linda.framework.rpc.cluster.RpcHostAndPort;
-import com.linda.framework.rpc.cluster.RpcMessage;
 import com.linda.framework.rpc.net.RpcNetBase;
 import com.linda.framework.rpc.utils.RpcUtils;
 
@@ -117,6 +112,12 @@ public class RedisRpcServer extends RpcClusterServer{
 		this.notifyRpcServer(network,RpcClusterConst.CODE_SERVER_START);
 		this.network = network;
 		this.startHeartBeat();
+
+		HostWeight weight = new HostWeight();
+		weight.setHost(this.getHost());
+		weight.setPort(this.getPort());
+		weight.setWeight(100);
+		this.doSetWeight(getApplication(),weight,false);
 	}
 	
 	private void stopHeartBeat(){
@@ -252,5 +253,34 @@ public class RedisRpcServer extends RpcClusterServer{
 		public void run() {
 			RedisRpcServer.this.notifyRpcServer(network, RpcClusterConst.CODE_SERVER_HEART);
 		}
+	}
+
+	private String genApplicationServerWeightKey(String application){
+		return this.namespace+"_weight_hosts_"+application;
+	}
+
+	private String genApplicationHostWeightKey(String application,String key){
+		return this.namespace+"_weight_data_"+application+"_host_"+key;
+	}
+
+	private void doSetWeight(final String application, final HostWeight weight, final boolean override){
+		final String applicationServerWeightKey = this.genApplicationServerWeightKey(application);
+		final String hostWeightKey = this.genApplicationHostWeightKey(application, weight.getKey());
+		final String weightData = JSONUtils.toJSON(weight);
+		RedisUtils.executeRedisCommand(jedisPool, new JedisCallback() {
+			@Override
+			public Object callback(Jedis jedis) {
+				String weightValue = jedis.get(hostWeightKey);
+				if(weightValue!=null){
+					if(override){
+						jedis.set(hostWeightKey,weightData);
+					}
+				}else{
+					jedis.set(hostWeightKey,weightData);
+					jedis.sadd(applicationServerWeightKey,weight.getKey());
+				}
+				return null;
+			}
+		});
 	}
 }
