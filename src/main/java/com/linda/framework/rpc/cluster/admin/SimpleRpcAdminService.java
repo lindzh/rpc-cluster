@@ -1,11 +1,13 @@
 package com.linda.framework.rpc.cluster.admin;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.linda.framework.rpc.RpcService;
 import com.linda.framework.rpc.Service;
 import com.linda.framework.rpc.client.SimpleRpcClient;
+import com.linda.framework.rpc.cluster.ConsumeRpcObject;
 import com.linda.framework.rpc.cluster.HostWeight;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.monitor.RpcMonitorService;
@@ -103,5 +105,10 @@ public class SimpleRpcAdminService extends RpcAdminService implements Service {
 	@Override
 	public void setWeight(String application, HostWeight weight) {
 		//do nothing
+	}
+
+	@Override
+	public List<ConsumeRpcObject> getConsumers(String group, String service, String version) {
+		return Collections.emptyList();
 	}
 }

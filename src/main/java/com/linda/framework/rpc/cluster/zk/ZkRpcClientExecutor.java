@@ -502,9 +502,16 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 			try{
 				zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(path,data);
 			}catch(Exception e){
-				throw new RpcException(e);
+				if(e instanceof KeeperException.NodeExistsException){
+					try {
+						zkclient.setData().forPath(path,data);
+					} catch (Exception e1) {
+						throw new RpcException(e1);
+					}
+				}else{
+					throw new RpcException(e);
+				}
 			}
-
 		}else{
 			try{
 				byte[] bytes = zkclient.getData().forPath(path);

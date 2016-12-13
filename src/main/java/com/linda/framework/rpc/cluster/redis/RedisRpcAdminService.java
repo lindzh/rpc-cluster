@@ -3,6 +3,7 @@ package com.linda.framework.rpc.cluster.redis;
 import java.util.List;
 import java.util.Set;
 
+import com.linda.framework.rpc.cluster.ConsumeRpcObject;
 import com.linda.framework.rpc.cluster.HostWeight;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
@@ -112,5 +113,10 @@ public class RedisRpcAdminService extends RpcAdminService implements Service {
 	@Override
 	public void setWeight(String application, HostWeight weight) {
 		this.getRedisExecutor().setWeight(application, weight);
+	}
+
+	@Override
+	public List<ConsumeRpcObject> getConsumers(String group, String service, String version) {
+		return this.getRedisExecutor().getConsumeObjects(group, service, version);
 	}
 }

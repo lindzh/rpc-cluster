@@ -3,6 +3,7 @@ package com.linda.framework.rpc.cluster.zk;
 import java.util.List;
 
 import com.linda.framework.rpc.RpcService;
+import com.linda.framework.rpc.cluster.HostWeight;
 import com.linda.framework.rpc.cluster.JSONUtils;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 
@@ -10,20 +11,32 @@ public class RpcZkAdminTest {
 	
 	public static void main(String[] args) {
 		ZkRpcAdminService adminService = new ZkRpcAdminService();
-		adminService.setConnectString("192.168.139.129:2215,192.168.139.129:2225,192.168.139.129:2235");
+		adminService.setConnectString("127.0.0.1:2181");
 		adminService.setNamespace("myrpc");
-		
 		adminService.startService();
-		
 		List<RpcHostAndPort> rpcServers = adminService.getRpcServers();
 		
 		System.out.println(JSONUtils.toJSON(rpcServers));
+
+		setWeight(adminService);
 		
 		for(RpcHostAndPort server:rpcServers){
 			List<RpcService> services = adminService.getRpcServices(server);
 			System.out.println(JSONUtils.toJSON(server.getHost()+":"+server.getPort()+"     "+services));
 		}
-		
+
+		List<HostWeight> weights = adminService.getWeights("myapp");
+		System.out.println(JSONUtils.toJSON(weights));
+
+		adminService.stopService();
+	}
+
+	public static void setWeight(ZkRpcAdminService adminService){
+		HostWeight weight = new HostWeight();
+		weight.setWeight(50);
+		weight.setHost("127.0.0.1");
+		weight.setPort(3333);
+		adminService.setWeight("myapp",weight);
 	}
 
 }
