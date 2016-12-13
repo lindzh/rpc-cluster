@@ -18,7 +18,7 @@ public class EtcdServerTest {
 		rpcServer.setNamespace("myapp");
 		rpcServer.setApplication("simple");
 		rpcServer.setSerializer(new SimpleSerializer());
-		rpcServer.setPort(3351);
+		rpcServer.setPort(3354);
 		rpcServer.register(HelloRpcService.class, new HelloRpcServiceImpl());
 		rpcServer.register(LoginRpcService.class, new LoginRpcServiceImpl());
 		rpcServer.register(HelloRpcTestService.class, new HelloRpcTestServiceImpl());
