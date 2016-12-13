@@ -350,10 +350,10 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 	}
 
 	@Override
-	public List<ConsumeRpcObject> getConsumeObjects(String group, String service, String version) {
+	public List<ConsumeRpcObject> getConsumeObjects(final String group, final String service, final String version) {
 		ArrayList<ConsumeRpcObject> list = new ArrayList<ConsumeRpcObject>();
 		List<String> apps = this.getConsumeApplications(group, service, version);
-		for(String app:apps){
+		for(final String app:apps){
 			final String appHostKey = this.genServiceConsumeAppHostKey(group,service,version,app);
 			Object result = RedisUtils.executeRedisCommand(jedisPool, new JedisCallback() {
 				@Override
@@ -362,8 +362,13 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 					Set<String> smembers = jedis.smembers(appHostKey);
 					if(smembers!=null){
 						for(String mm:smembers){
-							ConsumeRpcObject cc = JSONUtils.fromJSON(mm,ConsumeRpcObject.class);
-							objects.add(cc);
+							ConsumeRpcObject object = new ConsumeRpcObject();
+							object.setIp(mm);
+							object.setVersion(version);
+							object.setClassName(service);
+							object.setGroup(group);
+							object.setApplication(app);
+							objects.add(object);
 						}
 					}
 					return objects;
@@ -395,12 +400,7 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		},checkTtl*3);
 	}
 
-	/**
-	 * 获取权重列表
-	 * @param application
-	 * @param fromRegister
-     * @return
-     */
+
 	private List<HostWeight> doGetWeights(final String application, boolean fromRegister){
 		List<HostWeight> hostWeights = applicationWeightMap.get(application);
 		if(!fromRegister&&hostWeights!=null&&hostWeights.size()>0){
@@ -437,10 +437,6 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		if(result!=null){
 			hostWeights = (List<HostWeight>)result;
 			applicationWeightMap.put(application,hostWeights);
-		}else{
-			if(hostWeights==null){
-				hostWeights = new ArrayList<HostWeight>();
-			}
 		}
 		return hostWeights;
 	}

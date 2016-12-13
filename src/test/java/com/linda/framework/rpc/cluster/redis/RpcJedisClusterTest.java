@@ -12,7 +12,7 @@ public class RpcJedisClusterTest {
 	
 	public static void main(String[] args) {
 		RedisRpcServer rpcServer = new RedisRpcServer();
-		rpcServer.setPort(3321);
+		rpcServer.setPort(3323);
 		rpcServer.setRedisHost("127.0.0.1");
 		rpcServer.setRedisPort(6379);
 		rpcServer.setApplication("myapp");
