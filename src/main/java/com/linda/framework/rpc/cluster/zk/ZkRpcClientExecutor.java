@@ -352,6 +352,9 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 		try {
 			return zkclient.getChildren().forPath(consumerBase);
 		} catch (Exception e) {
+			if(e instanceof KeeperException.NoNodeException){
+				return Collections.emptyList();
+			}
 			throw new RpcException(e);
 		}
 	}
@@ -375,6 +378,9 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 					consumers.add(con);
 				}
 			} catch (Exception e) {
+				if(e instanceof KeeperException.NoNodeException){
+					continue;
+				}
 				throw new RpcException(e);
 			}
 		}

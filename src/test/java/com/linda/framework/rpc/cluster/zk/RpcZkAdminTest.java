@@ -30,7 +30,7 @@ public class RpcZkAdminTest {
 		List<HostWeight> weights = adminService.getWeights("myapp");
 		System.out.println(JSONUtils.toJSON(weights));
 
-		List<ConsumeRpcObject> consumers = adminService.getConsumers("hello", "com.linda.framework.rpc.cluster.HelloRpcService", RpcUtils.DEFAULT_VERSION);
+		List<ConsumeRpcObject> consumers = adminService.getConsumers("hello", "com.linda.framework.rpc.cluster.HelloRpcTestService", RpcUtils.DEFAULT_VERSION);
 		System.out.println(JSONUtils.toJSON(consumers));
 
 		adminService.stopService();
