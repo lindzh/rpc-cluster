@@ -2,9 +2,12 @@ package com.linda.framework.rpc.cluster.zk;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.linda.framework.rpc.cluster.*;
+import com.linda.framework.rpc.cluster.JSONUtils;
 import com.linda.framework.rpc.cluster.hash.RandomHashing;
+import com.linda.jetcd.*;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.CuratorWatcher;
@@ -39,7 +42,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 
 	private Map<String,List<HostWeight>> applicationWeightMap = new HashMap<String,List<HostWeight>>();
 
-	private List<RpcHostAndPort> rpcServersCache = new ArrayList<RpcHostAndPort>();
+	private List<RpcHostAndPort> rpcServersCache = new CopyOnWriteArrayList<RpcHostAndPort>();
 
 	private Map<String, List<RpcService>> rpcServiceCache = new ConcurrentHashMap<String, List<RpcService>>();
 
@@ -72,7 +75,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	}
 	
 	private String genServerKey(RpcHostAndPort hostAndPort) {
-		String str = hostAndPort.getHost()+"_"+hostAndPort.getPort();
+		String str = hostAndPort.getApplication()+"_"+hostAndPort.getHost()+"_"+hostAndPort.getPort();
 		return MD5Utils.md5(str);
 	}
 	
@@ -96,7 +99,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	private boolean isNew(String serverMd5){
 		boolean isNew = true;
 		for(RpcHostAndPort hap:rpcServersCache){
-			String str = hap.getHost() + "_" + hap.getPort();
+			String str = hap.getApplication()+"_"+hap.getHost() + "_" + hap.getPort();
 			String oldMd5 = MD5Utils.md5(str);
 			if(oldMd5.equals(serverMd5)){
 				isNew = false;
@@ -114,12 +117,15 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	 */
 	private boolean isOld(List<String> pathes,RpcHostAndPort hap){
 		boolean isOld = true;
-		String str = hap.getHost() + "_" + hap.getPort();
+		String str = hap.getApplication()+"_"+hap.getHost() + "_" + hap.getPort();
 		String oldMd5 = MD5Utils.md5(str);
 		for(String path:pathes){
 			if(path.contains(oldMd5)){
 				isOld = false;
 			}
+		}
+		if(isOld){
+			logger.info("[OLD] md5:"+oldMd5);
 		}
 		return isOld;
 	}
@@ -140,6 +146,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 				this.handleZkException(e);
 			}
 		}
+		logger.info("[SERVICES] host:"+hostAndPortString+" services:"+ JSONUtils.toJSON(rpcServices));
 		rpcServiceCache.put(hostAndPortString, rpcServices);
 	}
 	
@@ -150,6 +157,9 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 			List<String> services = this.zkclient.getChildren().forPath(serviceListKey);
 			this.getServices(services, hostAndPort);
 		} catch (Exception e) {
+			if(e instanceof KeeperException.NoNodeException){
+				return;
+			}
 			this.handleZkException(e);
 		}
 	}
@@ -183,7 +193,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 		logger.info("removeServer " + server);
 		this.rpcServiceCache.remove(server);
 		super.removeServer(hostAndPort.toString());
-		List<RpcHostAndPort> hostAndPorts = new ArrayList<RpcHostAndPort>();
+		List<RpcHostAndPort> hostAndPorts = new CopyOnWriteArrayList<RpcHostAndPort>();
 		for (RpcHostAndPort hap : rpcServersCache) {
 			if (!hap.toString().equals(server)) {
 				hostAndPorts.add(hap);
@@ -217,6 +227,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 			}
 			for(RpcHostAndPort hostAndPort:rpcServersCache){
 				if(this.isOld(pathes, hostAndPort)){
+					logger.info("[OLD REMOVE] "+JSONUtils.toJSON(hostAndPort)+" pathes:"+JSONUtils.toJSON(pathes));
 					this.removeServer0(hostAndPort);
 				}
 			}
@@ -246,6 +257,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	public List<RpcService> getServerService(RpcHostAndPort hostAndPort) {
 		if (hostAndPort != null) {
 			String key = hostAndPort.toString();
+			logger.info("[SERVICES] getservices:"+hostAndPort+" services:"+JSONUtils.toJSON(rpcServiceCache.get(key)));
 			return rpcServiceCache.get(key);
 		}
 		return Collections.emptyList();
@@ -257,6 +269,16 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 		this.initZk();
 		//获取机器和服务列表
 		this.fetchRpcServers(false);
+
+		//上报消费者信息
+		RpcHostAndPort rpcHostAndPort = new RpcHostAndPort();
+		rpcHostAndPort.setToken("defaultConsumer");
+		rpcHostAndPort.setApplication(this.getApplication());
+		rpcHostAndPort.setWeight(100);
+		rpcHostAndPort.setPort(100);
+		rpcHostAndPort.setHost(this.getSelfIp());
+		rpcHostAndPort.setTime(System.currentTimeMillis());
+		this.doUploadServerInfo(rpcHostAndPort);
 		//上报消费
 		this.doUpload();
 	}
@@ -265,6 +287,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	public void stopRpcCluster() {
 		this.zkclient.close();
 		rpcServersCache = null;
+		logger.info("[SERVER] stop rpc server clear services");
 		rpcServiceCache.clear();
 		timer.cancel();
 	}
@@ -286,6 +309,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	}
 	
 	private void closeServer(RpcHostAndPort hostAndPort) {
+		logger.info("[SERVER] close server "+hostAndPort);
 		rpcServiceCache.remove(hostAndPort.toString());
 		this.removeServer0(hostAndPort);
 	}
@@ -396,7 +420,11 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 			byte[] data = JSONUtils.toJSON(rpc).getBytes();
 			zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(host,data);
 		} catch (Exception e) {
-			throw new RpcException(e);
+			if(e instanceof KeeperException.NodeExistsException){
+
+			}else{
+				throw new RpcException(e);
+			}
 		}
 	}
 
@@ -406,7 +434,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	private void doUpload(){
 		if(consumeServices.size()>0){
 			for(ConsumeRpcObject rpc:consumeServices){
-				this.doUpload();
+				this.doUpload(rpc);
 			}
 		}
 	}
@@ -549,5 +577,27 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	@Override
 	public void setWeight(String application, HostWeight weight) {
 		this.doSetWehgit(application,weight.getKey(),weight.getWeight(),true);
+	}
+
+	private String genServerKey(String host,int port) {
+		String str = this.getApplication()+"_"+host + "_" + port;
+		return "/servers/" + MD5Utils.md5(str);
+	}
+
+	private void doUploadServerInfo(RpcHostAndPort hostAndPort){
+		String serverKey = this.genServerKey(hostAndPort.getHost(),hostAndPort.getPort());
+		String hostAndPortJson = JSONUtils.toJSON(hostAndPort);
+		logger.info("create rpc provider:"+hostAndPortJson);
+		try{
+			byte[] data = hostAndPortJson.getBytes(defaultEncoding);
+			this.zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(serverKey, data);
+			logger.info("add rpc provider success "+serverKey);
+		}catch(Exception e){
+			if(e instanceof KeeperException.NodeExistsException){
+				return;
+			}
+			logger.error("add provider error",e);
+			throw new RpcException(e);
+		}
 	}
 }

@@ -89,6 +89,7 @@ public class ZkRpcServer extends RpcClusterServer{
 		RpcHostAndPort hostAndPort = new RpcHostAndPort(network.getHost(),network.getPort());
 		hostAndPort.setTime(time);
 		hostAndPort.setToken(this.getToken());
+		hostAndPort.setApplication(this.getApplication());
 
 		String serverKey = this.genServerKey();
 		String hostAndPortJson = JSONUtils.toJSON(hostAndPort);
@@ -105,7 +106,7 @@ public class ZkRpcServer extends RpcClusterServer{
 	
 	private void initServerMd5(RpcNetBase network){
 		this.network = network;
-		String str = network.getHost() + "_" + network.getPort();
+		String str = this.getApplication()+"_"+network.getHost() + "_" + network.getPort();
 		this.serverMd5 = MD5Utils.md5(str);
 	}
 	
@@ -123,14 +124,22 @@ public class ZkRpcServer extends RpcClusterServer{
 			String serverKey = this.genServerKey();
 			this.zkclient.delete().forPath(serverKey);
 		}catch(Exception e){
-			logger.error("add provider error",e);
+			if(e instanceof KeeperException.NoNodeException){
+				//ignore
+			}else{
+				logger.error("add provider error",e);
+			}
 		}
 		try{
 			// 删除server的service列表
 			String serverServiceKey = this.genServerServiceKey();
 			this.zkclient.delete().deletingChildrenIfNeeded().forPath(serverServiceKey);
 		}catch(Exception e){
-			logger.error("add provider error",e);
+			if(e instanceof KeeperException.NoNodeException){
+
+			}else{
+				logger.error("add provider error",e);
+			}
 		}
 		logger.info("clean server data");
 	}

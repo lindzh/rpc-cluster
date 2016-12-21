@@ -16,6 +16,7 @@ public class RpcZkAdminTest {
 		adminService.setConnectString("127.0.0.1:2181");
 		adminService.setNamespace("myrpc");
 		adminService.startService();
+
 		List<RpcHostAndPort> rpcServers = adminService.getRpcServers();
 		
 		System.out.println(JSONUtils.toJSON(rpcServers));
@@ -31,9 +32,22 @@ public class RpcZkAdminTest {
 		System.out.println(JSONUtils.toJSON(weights));
 
 		List<ConsumeRpcObject> consumers = adminService.getConsumers("hello", "com.linda.framework.rpc.cluster.HelloRpcTestService", RpcUtils.DEFAULT_VERSION);
-		System.out.println(JSONUtils.toJSON(consumers));
 
-		adminService.stopService();
+		System.out.println("consumers:"+JSONUtils.toJSON(consumers));
+
+		consumers = adminService.getConsumers("hello", "com.linda.framework.rpc.cluster.HelloRpcService", RpcUtils.DEFAULT_VERSION);
+
+		System.out.println("consumers:"+JSONUtils.toJSON(consumers));
+
+		rpcServers = adminService.getRpcServers();
+
+		System.out.println(JSONUtils.toJSON(rpcServers));
+
+		rpcServers = adminService.getRpcServers();
+
+		System.out.println(JSONUtils.toJSON(rpcServers));
+
+//		adminService.stopService();
 	}
 
 	public static void setWeight(ZkRpcAdminService adminService){

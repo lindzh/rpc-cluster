@@ -76,7 +76,7 @@ public class EtcdRpcServer extends RpcClusterServer {
 		time = System.currentTimeMillis();
 		etcdClient = new EtcdClient(etcdUrl);
 		etcdClient.start();
-		String str = network.getHost() + "_" + network.getPort();
+		String str = this.getApplication()+"_"+network.getHost() + "_" + network.getPort();
 		this.serverMd5 = MD5Utils.md5(str);
 		this.network = network;
 		this.checkAndAddRpcService();
@@ -165,6 +165,8 @@ public class EtcdRpcServer extends RpcClusterServer {
 		hostAndPort.setTime(time);
 		//token
 		hostAndPort.setToken(this.getToken());
+
+		hostAndPort.setApplication(this.getApplication());
 
 		String serverKey = this.genServerKey();
 		String hostAndPortJson = JSONUtils.toJSON(hostAndPort);
