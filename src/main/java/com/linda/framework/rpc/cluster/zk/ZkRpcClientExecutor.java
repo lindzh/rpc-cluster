@@ -75,8 +75,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	}
 	
 	private String genServerKey(RpcHostAndPort hostAndPort) {
-		String str = hostAndPort.getApplication()+"_"+hostAndPort.getHost()+"_"+hostAndPort.getPort();
-		return MD5Utils.md5(str);
+		return MD5Utils.hostMd5(hostAndPort.getApplication(),hostAndPort.getHost(),hostAndPort.getPort());
 	}
 	
 	private void initZk(){
@@ -99,8 +98,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	private boolean isNew(String serverMd5){
 		boolean isNew = true;
 		for(RpcHostAndPort hap:rpcServersCache){
-			String str = hap.getApplication()+"_"+hap.getHost() + "_" + hap.getPort();
-			String oldMd5 = MD5Utils.md5(str);
+			String oldMd5 = MD5Utils.hostMd5(hap);
 			if(oldMd5.equals(serverMd5)){
 				isNew = false;
 				break;
@@ -117,8 +115,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	 */
 	private boolean isOld(List<String> pathes,RpcHostAndPort hap){
 		boolean isOld = true;
-		String str = hap.getApplication()+"_"+hap.getHost() + "_" + hap.getPort();
-		String oldMd5 = MD5Utils.md5(str);
+		String oldMd5 = MD5Utils.hostMd5(hap);
 		for(String path:pathes){
 			if(path.contains(oldMd5)){
 				isOld = false;
@@ -580,8 +577,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	}
 
 	private String genServerKey(String host,int port) {
-		String str = this.getApplication()+"_"+host + "_" + port;
-		return "/servers/" + MD5Utils.md5(str);
+		return "/servers/" + MD5Utils.hostMd5(this.getApplication(),host,port);
 	}
 
 	private void doUploadServerInfo(RpcHostAndPort hostAndPort){

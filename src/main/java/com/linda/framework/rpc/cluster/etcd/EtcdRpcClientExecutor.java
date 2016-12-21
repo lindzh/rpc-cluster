@@ -106,6 +106,15 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 		this.etcdClient = new EtcdClient(etcdUrl);
 		etcdClient.start();
 		this.fetchRpcServers(false);
+		//上报消费者信息
+		RpcHostAndPort rpcHostAndPort = new RpcHostAndPort();
+		rpcHostAndPort.setToken("defaultConsumer");
+		rpcHostAndPort.setApplication(this.getApplication());
+		rpcHostAndPort.setWeight(100);
+		rpcHostAndPort.setPort(100);
+		rpcHostAndPort.setHost(this.getSelfIp());
+		rpcHostAndPort.setTime(System.currentTimeMillis());
+//		this.doUploadServerInfo(rpcHostAndPort);
 		this.doUpload();
 	}
 
@@ -206,8 +215,7 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 	}
 
 	private String genServerKey(RpcHostAndPort hostAndPort) {
-		String str = hostAndPort.getHost()+"_"+hostAndPort.getPort();
-		return MD5Utils.md5(str);
+		return MD5Utils.hostMd5(hostAndPort);
 	}
 
 	/**

@@ -138,8 +138,7 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		for(RpcHostAndPort hap:rpcServersCache){
 			if(!hap.toString().equals(hostAndPortStr)){
 				hostAndPorts.add(hap);
-				String str = hap.getHost() + "_" + hap.getPort();
-				String serverMd5 = MD5Utils.md5(str);
+				String serverMd5 = MD5Utils.hostMd5(hap);
 				newMd5s.add(serverMd5);
 			}
 		}
@@ -181,8 +180,7 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 	}
 	
 	private void fetchRpcServices(final RpcHostAndPort hostAndPort){
-		String str = hostAndPort.getHost() + "_" + hostAndPort.getPort();
-		String serverMd5 = MD5Utils.md5(str);
+		String serverMd5 = MD5Utils.hostMd5(hostAndPort);
 		final String servicesKey = RedisUtils.genServicesKey(namespace, serverMd5);
 		RedisUtils.executeRedisCommand(jedisPool, new JedisCallback(){
 			public Object callback(Jedis jedis) {

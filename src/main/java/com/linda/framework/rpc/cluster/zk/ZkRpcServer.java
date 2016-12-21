@@ -106,8 +106,7 @@ public class ZkRpcServer extends RpcClusterServer{
 	
 	private void initServerMd5(RpcNetBase network){
 		this.network = network;
-		String str = this.getApplication()+"_"+network.getHost() + "_" + network.getPort();
-		this.serverMd5 = MD5Utils.md5(str);
+		this.serverMd5 = MD5Utils.hostMd5(this.getApplication(),network.getHost(),network.getPort());
 	}
 	
 	private void initZk(){
@@ -161,8 +160,7 @@ public class ZkRpcServer extends RpcClusterServer{
 	}
 
 	private void addRpcService(RpcService service) {
-		String key = service.getName() + "_" + service.getVersion();
-		String serviceMd5 = MD5Utils.md5(key);
+		String serviceMd5 = MD5Utils.serviceMd5(service);
 		String serviceKey = this.genServiceKey(serviceMd5);
 		String serviceJson = JSONUtils.toJSON(service);
 		logger.info("addRpcService:"+serviceJson);

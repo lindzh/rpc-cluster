@@ -76,8 +76,7 @@ public class EtcdRpcServer extends RpcClusterServer {
 		time = System.currentTimeMillis();
 		etcdClient = new EtcdClient(etcdUrl);
 		etcdClient.start();
-		String str = this.getApplication()+"_"+network.getHost() + "_" + network.getPort();
-		this.serverMd5 = MD5Utils.md5(str);
+		this.serverMd5 = MD5Utils.hostMd5(this.getApplication(),network.getHost(),network.getPort());
 		this.network = network;
 		this.checkAndAddRpcService();
 		this.startHeartBeat();
@@ -120,8 +119,7 @@ public class EtcdRpcServer extends RpcClusterServer {
 	}
 
 	private void addRpcService(RpcService service) {
-		String key = service.getName() + "_" + service.getVersion();
-		String serviceMd5 = MD5Utils.md5(key);
+		String serviceMd5 = MD5Utils.serviceMd5(service);
 		String serviceKey = this.genServiceKey(serviceMd5);
 		String serviceJson = JSONUtils.toJSON(service);
 		logger.info("addRpcService:"+serviceJson);

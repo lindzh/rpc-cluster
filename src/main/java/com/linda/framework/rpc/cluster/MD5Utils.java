@@ -1,5 +1,7 @@
 package com.linda.framework.rpc.cluster;
 
+import com.linda.framework.rpc.RpcService;
+
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 
@@ -7,7 +9,19 @@ public class MD5Utils {
     private static char hexDigits[] = { '0', '1', '2', '3', '4', '5', '6', '7',
                                     '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
-    public static String md5(String source) {
+    public static String hostMd5(String application,String host,int port){
+        return md5(application+"_"+host+"_"+port);
+    }
+
+    public static String serviceMd5(RpcService service){
+        return md5(service.getGroup()+"_"+service.getName()+"_"+service.getVersion());
+    }
+
+    public static String hostMd5(RpcHostAndPort host){
+        return md5(host.getApplication()+"_"+host.getHost()+"_"+host.getPort());
+    }
+
+    private static String md5(String source) {
 		try {
 			byte[] bytes = md5(source.getBytes("utf-8"));
 	        char str[] = new char[bytes.length * 2];
