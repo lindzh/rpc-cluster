@@ -41,6 +41,8 @@ public class RedisRpcServer extends RpcClusterServer{
 	private long time = 0;
 	
 	private String serverMd5;
+
+	private RpcHostAndPort myinfo = null;
 	
 	private Logger logger = Logger.getLogger(RedisRpcServer.class);
 	
@@ -99,7 +101,7 @@ public class RedisRpcServer extends RpcClusterServer{
 	@Override
 	public void onClose(RpcNetBase network, Exception e) {
 		jedisPool.stopService();
-		RedisRpcServer.this.notifyRpcServer(network, RpcClusterConst.CODE_SERVER_STOP);
+		RedisRpcServer.this.notifyRpcServer(myinfo, RpcClusterConst.CODE_SERVER_STOP);
 		this.setServerStop();
 		this.stopHeartBeat();
 	}
@@ -109,8 +111,14 @@ public class RedisRpcServer extends RpcClusterServer{
 		time = System.currentTimeMillis();
 		this.startJedisAndAddHost(network);
 		this.checkAndAddRpcService(network);
-		this.notifyRpcServer(network,RpcClusterConst.CODE_SERVER_START);
+		this.notifyRpcServer(myinfo,RpcClusterConst.CODE_SERVER_START);
 		this.network = network;
+
+		myinfo = new RpcHostAndPort(network.getHost(), network.getPort());
+		myinfo.setTime(time);
+		myinfo.setApplication(this.getApplication());
+		myinfo.setToken(this.getToken());
+
 		this.startHeartBeat();
 
 		HostWeight weight = new HostWeight();
@@ -144,34 +152,12 @@ public class RedisRpcServer extends RpcClusterServer{
 			}
 		});
 	}
-	
-	private <T> void publish(RpcMessage<T> message){
-		final String json = JSONUtils.toJSON(message);
-		RedisUtils.executeRedisCommand(jedisPool,new JedisCallback(){
-			public Object callback(Jedis jedis) {
-				String servicesKey = RedisUtils.genServicesKey(namespace, serverMd5);
-				//默认三倍通知的过期时间
-				int expire = (int)(notifyTtl*3)/1000;
-				jedis.expire(servicesKey, expire);
-				String channel = namespace+"_"+RpcClusterConst.RPC_REDIS_CHANNEL;
-				jedis.publish(channel, json);
-				logger.info("publish "+channel+" message:"+json);
-				return null;
-			}
-		});
-	}
-	
-	private void notifyRpcServer(RpcNetBase network,int messageType){
-		if(this.network==null){
-			this.network = network;
-		}
-		final RpcHostAndPort andPort = new RpcHostAndPort(network.getHost(), network.getPort());
-		andPort.setTime(time);
-		//token
-		andPort.setToken(this.getToken());
 
-		RpcMessage<RpcHostAndPort> rpcMessage = new RpcMessage<RpcHostAndPort>(messageType,andPort);
-		this.publish(rpcMessage);
+
+	
+	private void notifyRpcServer(RpcHostAndPort andPort,int messageType){
+		int expire = (int)(notifyTtl*3)/1000;
+		RedisUtils.notifyRpcServer(jedisPool,andPort,namespace,messageType,expire);
 	}
 	
 	private void startJedisAndAddHost(RpcNetBase network){
@@ -252,7 +238,7 @@ public class RedisRpcServer extends RpcClusterServer{
 	private class HeartBeatTask extends TimerTask{
 		@Override
 		public void run() {
-			RedisRpcServer.this.notifyRpcServer(network, RpcClusterConst.CODE_SERVER_HEART);
+			RedisRpcServer.this.notifyRpcServer(myinfo, RpcClusterConst.CODE_SERVER_HEART);
 		}
 	}
 

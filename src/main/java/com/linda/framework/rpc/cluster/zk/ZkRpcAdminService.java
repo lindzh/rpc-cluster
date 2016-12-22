@@ -42,6 +42,7 @@ public class ZkRpcAdminService extends RpcAdminService implements Service  {
 
 	@Override
 	public void startService() {
+		this.getExecutor().setAdmin(true);
 		this.zkRpcClient.startService();
 	}
 

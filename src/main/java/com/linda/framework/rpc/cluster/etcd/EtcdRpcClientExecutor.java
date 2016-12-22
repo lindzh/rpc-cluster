@@ -111,13 +111,7 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 		etcdClient.start();
 		this.fetchRpcServers(false);
 		//上报消费者信息
-		selfHost = new RpcHostAndPort();
-		selfHost.setToken("defaultConsumer");
-		selfHost.setApplication(this.getApplication());
-		selfHost.setWeight(100);
-		selfHost.setPort(100);
-		selfHost.setHost(this.getSelfIp());
-		selfHost.setTime(System.currentTimeMillis());
+		selfHost = RpcClusterUtils.genConsumerInfo(this.getApplication(), this.getSelfIp());
 
 		if(!this.isAdmin){
 			this.doUploadServerInfo();

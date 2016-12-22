@@ -27,6 +27,8 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 	private Timer timer = new Timer();
 	
 	private long checkTtl = 8000;
+
+	private boolean isAdmin = false;
 	
 	private List<RpcHostAndPort> rpcServersCache = new ArrayList<RpcHostAndPort>();
 	
@@ -90,7 +92,13 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 		this.startHeartBeat();
 		this.fetchRpcServers();
 		this.fetchRpcServices();
-		this.doUpload();
+
+		if(!isAdmin){
+			//admin不上传
+			this.doUpload();
+			this.doUploadServerInfo(RpcClusterConst.CODE_SERVER_START);
+			startPublishServer();
+		}
 		started = true;
 	}
 	
@@ -105,12 +113,30 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 	@Override
 	public void stopRpcCluster() {
 		started = false;
-		this.doDeleteConsumes();
+
 		this.stopHeartBeat();
+
+		this.doUploadServerInfo(RpcClusterConst.CODE_SERVER_STOP);
+		this.doDeleteConsumes();
+
 		jedisPool.stopService();
 		rpcServersCache = null;
 		rpcServiceCache.clear();
 		heartBeanTimeCache.clear();
+	}
+
+	private void startPublishServer(){
+		timer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				doUploadServerInfo(RpcClusterConst.CODE_SERVER_HEART);
+			}
+		},new Date(),checkTtl/3);
+	}
+
+	private void doUploadServerInfo(int messageType){
+		int expire = (int)(checkTtl*2/1000);
+		RedisUtils.notifyRpcServer(jedisPool,null,this.namespace,messageType,expire);
 	}
 
 	@Override
@@ -468,5 +494,13 @@ public class RedisRpcClientExecutor extends AbstractRpcClusterClientExecutor imp
 	@Override
 	public void setWeight(String application, HostWeight weight) {
 		this.doSetWeight(application,weight,true);
+	}
+
+	public boolean isAdmin() {
+		return isAdmin;
+	}
+
+	public void setAdmin(boolean admin) {
+		isAdmin = admin;
 	}
 }

@@ -50,18 +50,6 @@ public class ZkRpcServer extends RpcClusterServer{
 	private String defaultEncoding = "utf-8";
 	
 	private List<RpcService> rpcServiceCache = new ArrayList<RpcService>();
-	
-	private String genServerKey() {
-		return "/servers/" + this.serverMd5;
-	}
-
-	private String genServerServiceKey() {
-		return "/services/" + this.serverMd5;
-	}
-
-	private String genServiceKey(String serviceMd5) {
-		return "/services/" + this.serverMd5 + "/" + serviceMd5;
-	}
 
 	private Random random = new Random();
 	
@@ -82,7 +70,7 @@ public class ZkRpcServer extends RpcClusterServer{
 		this.checkAndAddRpcService();
 		this.addProviderServer();
 		//设置权重,默认100
-		this.doSetWehgit(getApplication(),this.getHost()+":"+this.getPort(),100,false);
+		ZKUtils.doSetWehgit(zkclient,getApplication(),this.getHost()+":"+this.getPort(),100,false);
 	}
 	
 	private void addProviderServer(){
@@ -91,7 +79,7 @@ public class ZkRpcServer extends RpcClusterServer{
 		hostAndPort.setToken(this.getToken());
 		hostAndPort.setApplication(this.getApplication());
 
-		String serverKey = this.genServerKey();
+		String serverKey = ZKUtils.genServerKey(this.serverMd5);
 		String hostAndPortJson = JSONUtils.toJSON(hostAndPort);
 		logger.info("create rpc provider:"+hostAndPortJson);
 		try{
@@ -120,7 +108,7 @@ public class ZkRpcServer extends RpcClusterServer{
 	private void cleanIfExist() {
 		try{
 			// 删除server
-			String serverKey = this.genServerKey();
+			String serverKey = ZKUtils.genServerKey(this.serverMd5);
 			this.zkclient.delete().forPath(serverKey);
 		}catch(Exception e){
 			if(e instanceof KeeperException.NoNodeException){
@@ -131,7 +119,7 @@ public class ZkRpcServer extends RpcClusterServer{
 		}
 		try{
 			// 删除server的service列表
-			String serverServiceKey = this.genServerServiceKey();
+			String serverServiceKey = ZKUtils.genServerServiceKey(this.serverMd5);
 			this.zkclient.delete().deletingChildrenIfNeeded().forPath(serverServiceKey);
 		}catch(Exception e){
 			if(e instanceof KeeperException.NoNodeException){
@@ -144,7 +132,7 @@ public class ZkRpcServer extends RpcClusterServer{
 	}
 	
 	private void makeSurePath(){
-		String serviceKey = this.genServerServiceKey();
+		String serviceKey = ZKUtils.genServerServiceKey(this.serverMd5);
 		try {
 			this.zkclient.create().creatingParentsIfNeeded().forPath(serviceKey);
 		} catch (Exception e) {
@@ -161,7 +149,7 @@ public class ZkRpcServer extends RpcClusterServer{
 
 	private void addRpcService(RpcService service) {
 		String serviceMd5 = MD5Utils.serviceMd5(service);
-		String serviceKey = this.genServiceKey(serviceMd5);
+		String serviceKey = ZKUtils.genServiceKey(this.serverMd5,serviceMd5);
 		String serviceJson = JSONUtils.toJSON(service);
 		logger.info("addRpcService:"+serviceJson);
 		try{
@@ -240,58 +228,4 @@ public class ZkRpcServer extends RpcClusterServer{
 		this.baseSleepTime = baseSleepTime;
 	}
 
-
-	private String genWeightKey(String application,String hostkey){
-		return "/weights/"+application+"/"+hostkey;
-	}
-
-	private String genApplicationWeightsKey(String application){
-		return "/weights/"+application;
-	}
-
-	/**
-	 * 设置权重列表
-	 * @param application
-	 * @param key
-	 * @param weight
-	 * @param override
-	 */
-	private void doSetWehgit(String application,String key,int weight,boolean override){
-		String path = this.genWeightKey(application,key);
-		byte[] data = (""+weight).getBytes();
-		if(override){
-				try{
-					zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(path,data);
-				}catch(Exception e){
-					throw new RpcException(e);
-				}
-
-		}else{
-				try{
-					byte[] bytes = zkclient.getData().forPath(path);
-					if(bytes==null){
-						zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(path,data);
-					}
-					return;
-				}catch(Exception e){
-					if(e instanceof KeeperException.NoNodeException){
-						try {
-							zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(path,data);
-						} catch (Exception e1) {
-							throw new RpcException(e1);
-						}
-					}
-				}
-		}
-		//通过weight app data通知
-		//notify change
-		String applicationWeightsKey = this.genApplicationWeightsKey(application);
-		int idx = this.random.nextInt(100000000);
-		byte[] appData = (application+"_"+idx).getBytes();
-		try {
-			zkclient.setData().forPath(applicationWeightsKey,appData);
-		} catch (Exception e) {
-			throw new RpcException(e);
-		}
-	}
 }

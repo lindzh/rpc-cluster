@@ -14,4 +14,15 @@ public class RpcClusterUtils {
 		return set;
 	}
 
+	public static RpcHostAndPort genConsumerInfo(String application,String ip){
+		RpcHostAndPort rpcHostAndPort = new RpcHostAndPort();
+		rpcHostAndPort.setToken("simple");
+		rpcHostAndPort.setApplication(application);
+		rpcHostAndPort.setWeight(100);
+		rpcHostAndPort.setPort(100);
+		rpcHostAndPort.setHost(ip);
+		rpcHostAndPort.setTime(System.currentTimeMillis());
+		return rpcHostAndPort;
+	}
+
 }

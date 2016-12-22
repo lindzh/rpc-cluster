@@ -82,6 +82,7 @@ public class RedisRpcAdminService extends RpcAdminService implements Service {
 
 	@Override
 	public void startService() {
+		this.getRedisExecutor().setAdmin(true);
 		redisRpcClient.startService();
 	}
 

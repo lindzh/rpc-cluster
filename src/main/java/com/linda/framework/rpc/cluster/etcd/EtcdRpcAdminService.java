@@ -57,7 +57,7 @@ public class EtcdRpcAdminService  extends RpcAdminService implements Service  {
 
 	@Override
 	public void startService() {
-		((EtcdRpcClientExecutor)etcdRpcClient.getRemoteExecutor()).setAdmin(true);
+		this.getExecutor().setAdmin(true);
 		etcdRpcClient.startService();
 	}
 

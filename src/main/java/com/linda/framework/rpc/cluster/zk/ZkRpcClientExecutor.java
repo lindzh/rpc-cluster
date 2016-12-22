@@ -40,6 +40,8 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	
 	private String defaultEncoding = "utf-8";
 
+	private boolean isAdmin = false;
+
 	private Map<String,List<HostWeight>> applicationWeightMap = new HashMap<String,List<HostWeight>>();
 
 	private List<RpcHostAndPort> rpcServersCache = new CopyOnWriteArrayList<RpcHostAndPort>();
@@ -131,7 +133,7 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 		String hostAndPortString = hostAndPort.toString();
 		String serverKey = this.genServerKey(hostAndPort);
 		String serviceListKey = this.getServiceListKey(serverKey);
-		ArrayList<RpcService> rpcServices = new ArrayList<RpcService>();
+		List<RpcService> rpcServices = new CopyOnWriteArrayList<RpcService>();
 		for(String service:services){
 			String key = serviceListKey+"/"+service;
 			try{
@@ -267,17 +269,13 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 		//获取机器和服务列表
 		this.fetchRpcServers(false);
 
-		//上报消费者信息
-		RpcHostAndPort rpcHostAndPort = new RpcHostAndPort();
-		rpcHostAndPort.setToken("defaultConsumer");
-		rpcHostAndPort.setApplication(this.getApplication());
-		rpcHostAndPort.setWeight(100);
-		rpcHostAndPort.setPort(100);
-		rpcHostAndPort.setHost(this.getSelfIp());
-		rpcHostAndPort.setTime(System.currentTimeMillis());
-		this.doUploadServerInfo(rpcHostAndPort);
-		//上报消费
-		this.doUpload();
+		if(!isAdmin){
+			//上报消费者信息
+			RpcHostAndPort rpcHostAndPort = RpcClusterUtils.genConsumerInfo(this.getApplication(), this.getSelfIp());
+			this.doUploadServerInfo(rpcHostAndPort);
+			//上报消费
+			this.doUpload();
+		}
 	}
 
 	@Override
@@ -436,17 +434,9 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 		}
 	}
 
-	private String genWeightKey(String application,String hostkey){
-		return "/weights/"+application+"/"+hostkey;
-	}
-
-	private String genApplicationWeightsKey(String application){
-		return "/weights/"+application;
-	}
-
 	private void watchWeight(final String application){
 
-		String applicationWeightsKey = this.genApplicationWeightsKey(application);
+		String applicationWeightsKey = ZKUtils.genApplicationWeightsKey(application);
 		try{
 			zkclient.getData().usingWatcher(new CuratorWatcher() {
 				@Override
@@ -481,13 +471,13 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 			}
 		}
 
-		String weightsKey = this.genApplicationWeightsKey(application);
+		String weightsKey =  ZKUtils.genApplicationWeightsKey(application);
 		ArrayList<HostWeight> result = new ArrayList<HostWeight>();
 		try {
 			List<String> hosts = zkclient.getChildren().forPath(weightsKey);
 			if(hosts!=null&&hosts.size()>0){
 				for(String host:hosts){
-					String genWeightKey = this.genWeightKey(application, host);
+					String genWeightKey = ZKUtils.genWeightKey(application,host);
 					byte[] data = zkclient.getData().forPath(genWeightKey);
 					if(data!=null){
 						String ww = new String(data);
@@ -512,72 +502,13 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 		return result;
 	}
 
-	/**
-	 * 设置权重列表
-	 * @param application
-	 * @param key
-	 * @param weight
-	 * @param override
-     */
-	/**
-	 * 设置权重列表
-	 * @param application
-	 * @param key
-	 * @param weight
-	 * @param override
-	 */
-	private void doSetWehgit(String application,String key,int weight,boolean override){
-		String path = this.genWeightKey(application,key);
-		byte[] data = (""+weight).getBytes();
-		if(override){
-			try{
-				zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(path,data);
-			}catch(Exception e){
-				if(e instanceof KeeperException.NodeExistsException){
-					try {
-						zkclient.setData().forPath(path,data);
-					} catch (Exception e1) {
-						throw new RpcException(e1);
-					}
-				}else{
-					throw new RpcException(e);
-				}
-			}
-		}else{
-			try{
-				byte[] bytes = zkclient.getData().forPath(path);
-				if(bytes==null){
-					zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(path,data);
-				}
-			}catch(Exception e){
-				if(e instanceof KeeperException.NoNodeException){
-					try {
-						zkclient.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(path,data);
-					} catch (Exception e1) {
-						throw new RpcException(e1);
-					}
-				}
-			}
-		}
-		//通过weight app data通知
-		//notify change
-		String applicationWeightsKey = this.genApplicationWeightsKey(application);
-		int idx = this.random.nextInt(100000000);
-		byte[] appData = (application+"_"+idx).getBytes();
-		try {
-			zkclient.setData().forPath(applicationWeightsKey,appData);
-		} catch (Exception e) {
-			throw new RpcException(e);
-		}
-	}
-
 	@Override
 	public void setWeight(String application, HostWeight weight) {
-		this.doSetWehgit(application,weight.getKey(),weight.getWeight(),true);
+		ZKUtils.doSetWehgit(zkclient,application,weight.getKey(),weight.getWeight(),true);
 	}
 
 	private String genServerKey(String host,int port) {
-		return "/servers/" + MD5Utils.hostMd5(this.getApplication(),host,port);
+		return ZKUtils.genServerKey(MD5Utils.hostMd5(this.getApplication(),host,port));
 	}
 
 	private void doUploadServerInfo(RpcHostAndPort hostAndPort){
@@ -595,5 +526,13 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 			logger.error("add provider error",e);
 			throw new RpcException(e);
 		}
+	}
+
+	public boolean isAdmin() {
+		return isAdmin;
+	}
+
+	public void setAdmin(boolean admin) {
+		isAdmin = admin;
 	}
 }
