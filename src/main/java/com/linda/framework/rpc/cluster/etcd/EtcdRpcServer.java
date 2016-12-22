@@ -32,9 +32,9 @@ public class EtcdRpcServer extends RpcClusterServer {
 
 	private Timer timer = new Timer();
 
-	private long notifyTtl = 5000;// 默认5秒发送一次
+	private long notifyTtl = 30;// 默认5分钟
 
-	private int serverttl = 10;// 10ms
+	private int serverttl = 60;// 1min
 
 	private String serverMd5 = null;
 	
@@ -91,7 +91,7 @@ public class EtcdRpcServer extends RpcClusterServer {
 
 	private void startHeartBeat() {
 		Date start = new Date(System.currentTimeMillis() + 1000L);
-		timer.scheduleAtFixedRate(new HeartBeatTask(), start, notifyTtl);
+		timer.scheduleAtFixedRate(new HeartBeatTask(), start, notifyTtl*1000);
 	}
 
 	/**

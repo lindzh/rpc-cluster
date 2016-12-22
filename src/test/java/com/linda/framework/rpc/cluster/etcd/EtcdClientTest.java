@@ -6,7 +6,7 @@ import com.linda.framework.rpc.cluster.serializer.simple.SimpleSerializer;
 
 public class EtcdClientTest {
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 		
 		EtcdRpcClient client = new EtcdRpcClient();
 		client.setEtcdUrl("http://127.0.0.1:2379");
@@ -19,12 +19,14 @@ public class EtcdClientTest {
 		int index = 50000;
 		
 		while(true){
-			rpcService.sayHello("this is rpc etcd test-"+index, index);
-			index++;
+
 			try {
+				rpcService.sayHello("this is rpc etcd test-"+index, index);
+				index++;
 				Thread.sleep(1000L);
-			} catch (InterruptedException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
+				Thread.sleep(1000L);
 			}
 		}
 	}

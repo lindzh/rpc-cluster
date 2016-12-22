@@ -37,11 +37,15 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 
 	private HashSet<ConsumeRpcObject> consumeServices = new HashSet<ConsumeRpcObject>();
 
-	private int ttl = 30000;
+	private int ttl = 60;
 
 	private Timer timer = new Timer();
 
 	private Random random = new Random();
+
+	private RpcHostAndPort selfHost;
+
+	private boolean isAdmin = false;
 
 	private EtcdWatchCallback etcdServerWatcher = new EtcdWatchCallback() {
 		public void onChange(EtcdChangeResult future) {
@@ -107,15 +111,18 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 		etcdClient.start();
 		this.fetchRpcServers(false);
 		//上报消费者信息
-		RpcHostAndPort rpcHostAndPort = new RpcHostAndPort();
-		rpcHostAndPort.setToken("defaultConsumer");
-		rpcHostAndPort.setApplication(this.getApplication());
-		rpcHostAndPort.setWeight(100);
-		rpcHostAndPort.setPort(100);
-		rpcHostAndPort.setHost(this.getSelfIp());
-		rpcHostAndPort.setTime(System.currentTimeMillis());
-//		this.doUploadServerInfo(rpcHostAndPort);
-		this.doUpload();
+		selfHost = new RpcHostAndPort();
+		selfHost.setToken("defaultConsumer");
+		selfHost.setApplication(this.getApplication());
+		selfHost.setWeight(100);
+		selfHost.setPort(100);
+		selfHost.setHost(this.getSelfIp());
+		selfHost.setTime(System.currentTimeMillis());
+
+		if(!this.isAdmin){
+			this.doUploadServerInfo();
+			this.doUpload();
+		}
 	}
 
 	private void startHeartBeat(){
@@ -124,7 +131,18 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 			public void run() {
 				EtcdRpcClientExecutor.this.doUpload();
 			}
-		},new Date(),ttl/3);
+		},new Date(),(ttl/3)*1000);
+	}
+
+	private void doUploadServerInfo(){
+		timer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				String key = "/"+namespace+"/servers/" + MD5Utils.hostMd5(selfHost);
+				String value = JSONUtils.toJSON(selfHost);
+				etcdClient.set(key,value,ttl);
+			}
+		},new Date(),(ttl/3)*1000);
 	}
 
 	@Override
@@ -304,7 +322,7 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 		String data = JSONUtils.toJSON(object);
 		String service = this.genConsumeKey(object.getGroup(),object.getClassName(),object.getVersion());
 		String hostDir = this.genServiceComsumeHostKey(service,object.getApplication(),object.getIp());
-		this.etcdClient.set(hostDir,data,ttl);
+		this.etcdClient.set(hostDir,data);
 	}
 
 	@Override
@@ -445,5 +463,13 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 	@Override
 	public void setWeight(String application, HostWeight weight) {
 		this.doSetWehgit(application,weight.getKey(),weight.getWeight(),true);
+	}
+
+	public boolean isAdmin() {
+		return isAdmin;
+	}
+
+	public void setAdmin(boolean admin) {
+		isAdmin = admin;
 	}
 }
