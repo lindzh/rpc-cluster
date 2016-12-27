@@ -1,6 +1,7 @@
 package com.linda.framework.rpc.cluster.serializer.simple;
 
 import com.linda.framework.rpc.exception.RpcException;
+import com.linda.framework.rpc.utils.XAliasUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -97,7 +98,7 @@ public class SimpleOutput {
             byte dd = SimpleConst.ObjectType|SimpleConst.NotNull;
             dos.writeByte(dd);
             this.writeString(clazz.getName());
-            Set<Field> fields = this.getClassField(clazz);
+            Set<Field> fields = XAliasUtils.getClassField(clazz);
             dos.writeShort((short)fields.size());
             for(Field field:fields){
                 this.writeString(field.getName());
@@ -111,31 +112,8 @@ public class SimpleOutput {
             }
         }
     }
-    
-    private Set<Field> getClassField(Class clazz){
-        HashSet<Field> result = new HashSet<Field>();
-        if(clazz==Object.class){
-            return result;
-        }
 
-        Field[] fields = clazz.getDeclaredFields();
 
-        for(Field f:fields){
-            int m = f.getModifiers();
-            if(Modifier.isFinal(m)){
-                continue;
-            }
-            if(Modifier.isStatic(m)){
-                continue;
-            }
-
-            f.setAccessible(true);
-            result.add(f);
-        }
-
-        result.addAll(this.getClassField(clazz.getSuperclass()));
-        return result;
-    }
 
     /**
      * 解析生成集合类item类型

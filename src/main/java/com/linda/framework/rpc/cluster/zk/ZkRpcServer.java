@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import com.linda.framework.rpc.utils.XAliasUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -162,18 +163,9 @@ public class ZkRpcServer extends RpcClusterServer{
 	}
 
 	@Override
-	protected void doRegister(Class<?> clazz, Object ifaceImpl) {
-		this.doRegister(clazz, ifaceImpl, RpcUtils.DEFAULT_VERSION);
-	}
-
-	@Override
-	protected void doRegister(Class<?> clazz, Object ifaceImpl, String version) {
-		this.doRegister(clazz, ifaceImpl, version,RpcUtils.DEFAULT_GROUP);
-	}
-
-	@Override
 	protected void doRegister(Class<?> clazz, Object ifaceImpl, String version,String group) {
-		RpcService service = new RpcService(clazz.getName(), version, ifaceImpl.getClass().getName());
+		RpcService service = new RpcService(clazz.getName(), version, "");
+
 		service.setTime(System.currentTimeMillis());
 
 		service.setApplication(this.getApplication());

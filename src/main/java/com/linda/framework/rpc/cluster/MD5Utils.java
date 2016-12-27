@@ -21,7 +21,7 @@ public class MD5Utils {
         return md5(host.getApplication()+"_"+host.getHost()+"_"+host.getPort());
     }
 
-    private static String md5(String source) {
+    public static String md5(String source) {
 		try {
 			byte[] bytes = md5(source.getBytes("utf-8"));
 	        char str[] = new char[bytes.length * 2];

@@ -208,16 +208,6 @@ public class RedisRpcServer extends RpcClusterServer{
 			}
 		}
 	}
-	
-	@Override
-	protected void doRegister(Class<?> clazz, Object ifaceImpl) {
-		this.doRegister(clazz, ifaceImpl, RpcUtils.DEFAULT_VERSION);
-	}
-
-	@Override
-	protected void doRegister(Class<?> clazz, Object ifaceImpl, String version) {
-		this.doRegister(clazz, ifaceImpl, version,RpcUtils.DEFAULT_GROUP);
-	}
 
 	@Override
 	protected void doRegister(Class<?> clazz, Object ifaceImpl, String version,String group) {
