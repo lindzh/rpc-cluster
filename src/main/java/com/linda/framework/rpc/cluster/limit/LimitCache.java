@@ -40,33 +40,39 @@ public class LimitCache {
 
     public void addOrUpdate(List<LimitDefine> limits){
         if(limits!=null){
+            ConcurrentHashMap<String,LimitDefine> bakinnerLimit = new ConcurrentHashMap<String, LimitDefine>();
+            ConcurrentHashMap<String,LimitDefine> bakapplicationLimit = new ConcurrentHashMap<String,LimitDefine>();
+            //
             for(LimitDefine limit:limits){
                 if(limit.getType()==LimitConst.LIMIT_ALL){
-                    innerLimit.put(genKey(LimitConst.SYSTEM_LIMIT,null,null,null),limit);
+                    bakinnerLimit.put(genKey(LimitConst.SYSTEM_LIMIT,null,null,null),limit);
                 }else if(limit.getType()==LimitConst.LIMIT_SERVICE){
                     if(limit.getService()!=null){
-                        innerLimit.put(genKey(LimitConst.SYSTEM_LIMIT,null,limit.getService(),null),limit);
+                        bakinnerLimit.put(genKey(LimitConst.SYSTEM_LIMIT,null,limit.getService(),null),limit);
                     }
                 }else if(limit.getType()==LimitConst.LIMIT_METHOD){
                     if(limit!=null&&limit.getMethod()!=null){
-                        innerLimit.put(genKey(LimitConst.SYSTEM_LIMIT,null,limit.getService(),limit.getMethod()),limit);
+                        bakinnerLimit.put(genKey(LimitConst.SYSTEM_LIMIT,null,limit.getService(),limit.getMethod()),limit);
                     }
                 }
                 if(limit.getApplication()==null){
                     continue;
                 }
                 if(limit.getType()==LimitConst.LIMIT_APP_ALL){
-                    applicationLimit.put(genKey(LimitConst.OUTER_LIMIT,limit.getApplication(),null,null),limit);
+                    bakapplicationLimit.put(genKey(LimitConst.OUTER_LIMIT,limit.getApplication(),null,null),limit);
                 }else if(limit.getType()==LimitConst.LIMIT_APP_SERVICE){
                     if(limit.getService()!=null){
-                        applicationLimit.put(genKey(LimitConst.OUTER_LIMIT,limit.getApplication(),limit.getService(),null),limit);
+                        bakapplicationLimit.put(genKey(LimitConst.OUTER_LIMIT,limit.getApplication(),limit.getService(),null),limit);
                     }
                 }else if(limit.getType()==LimitConst.LIMIT_APP_METHOD){
                     if(limit.getService()!=null&&limit.getMethod()!=null){
-                        applicationLimit.put(genKey(LimitConst.OUTER_LIMIT,limit.getApplication(),limit.getService(),limit.getMethod()),limit);
+                        bakapplicationLimit.put(genKey(LimitConst.OUTER_LIMIT,limit.getApplication(),limit.getService(),limit.getMethod()),limit);
                     }
                 }
             }
+            //更新缓存
+            innerLimit = bakinnerLimit;
+            applicationLimit = bakapplicationLimit;
         }
     }
 

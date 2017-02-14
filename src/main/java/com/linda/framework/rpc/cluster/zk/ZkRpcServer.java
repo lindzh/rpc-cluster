@@ -4,9 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.linda.framework.rpc.cluster.limit.LimitCache;
+import com.linda.framework.rpc.cluster.limit.LimitDefine;
+import com.linda.framework.rpc.cluster.limit.LimitFilter;
 import com.linda.framework.rpc.utils.XAliasUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.BackgroundCallback;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.CreateMode;
@@ -53,6 +60,8 @@ public class ZkRpcServer extends RpcClusterServer{
 	private List<RpcService> rpcServiceCache = new ArrayList<RpcService>();
 
 	private Random random = new Random();
+
+	private LimitCache limitCache = new LimitCache();
 	
 	@Override
 	public void onClose(RpcNetBase network, Exception e) {
@@ -60,6 +69,12 @@ public class ZkRpcServer extends RpcClusterServer{
 			this.cleanIfExist();
 			this.zkclient.close();
 		}
+	}
+
+	@Override
+	public void startService() {
+		super.startService();
+		this.addRpcFilter(new LimitFilter(limitCache));
 	}
 
 	@Override
@@ -72,6 +87,10 @@ public class ZkRpcServer extends RpcClusterServer{
 		this.addProviderServer();
 		//设置权重,默认100
 		ZKUtils.doSetWehgit(zkclient,getApplication(),this.getHost()+":"+this.getPort(),100,false);
+		//获取限流配置
+		this.fetchLimit();
+		//监控限流配置
+		this.watchLimit();
 	}
 	
 	private void addProviderServer(){
@@ -130,6 +149,43 @@ public class ZkRpcServer extends RpcClusterServer{
 			}
 		}
 		logger.info("clean server data");
+	}
+
+	private void fetchLimit(){
+		try {
+			List<LimitDefine> limits = ZKUtils.getLimits(this.getApplication(), zkclient);
+			limitCache.addOrUpdate(limits);
+		} catch (Exception e) {
+			if(e instanceof KeeperException.NoNodeException){
+				limitCache.addOrUpdate(new ArrayList<LimitDefine>());
+			}else{
+				logger.error("fetch application request limit config failed",e);
+			}
+		}
+	}
+
+	private void watchLimit(){
+		try{
+			zkclient.getData().inBackground(new BackgroundCallback() {
+				@Override
+				public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
+					byte[] data = curatorEvent.getData();
+					if(data!=null){
+						List<LimitDefine> limitDefines = JSONUtils.fromJSON(new String(data), new TypeReference<List<LimitDefine>>() {});
+						limitCache.addOrUpdate(new ArrayList<LimitDefine>());
+					}
+					if(!ZkRpcServer.this.stop){
+						watchLimit();
+					}
+				}
+			}).forPath(ZKUtils.genLimitKey(this.getApplication()));
+		}catch(Exception e){
+			if(e instanceof KeeperException.NoNodeException){
+				limitCache.addOrUpdate(new ArrayList<LimitDefine>());
+			}else{
+				logger.error("fetch application request limit config failed",e);
+			}
+		}
 	}
 	
 	private void makeSurePath(){
