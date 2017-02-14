@@ -1,10 +1,15 @@
 package com.linda.framework.rpc.cluster.zk;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.linda.framework.rpc.cluster.JSONUtils;
+import com.linda.framework.rpc.cluster.limit.LimitDefine;
 import com.linda.framework.rpc.exception.RpcException;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -31,6 +36,19 @@ public class ZKUtils {
 
     public static String genServiceKey(String serverMd5,String serviceMd5) {
         return "/services/" + serverMd5 + "/" + serviceMd5;
+    }
+
+    public static String genLimitKey(String application){
+        return "/limit/"+application;
+    }
+
+    public static List<LimitDefine> getLimits(String application, CuratorFramework zkclient) throws Exception{
+        ArrayList<LimitDefine> limitDefines = new ArrayList<LimitDefine>();
+        byte[] data = zkclient.getData().forPath(genLimitKey(application));
+        String limitData = new String(data);
+        List<LimitDefine> limits = JSONUtils.fromJSON(limitData, new TypeReference<List<LimitDefine>>() {});
+        limitDefines.addAll(limits);
+        return limitDefines;
     }
 
     /**
