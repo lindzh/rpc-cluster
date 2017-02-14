@@ -5,12 +5,13 @@ import com.linda.framework.rpc.cluster.*;
 import com.linda.framework.rpc.cluster.serializer.ProtostuffSerializer;
 import com.linda.framework.rpc.cluster.serializer.simple.SimpleSerializer;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 
 public class SimpleRpcClientTest {
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 		
 		SimpleRpcClient client = new SimpleRpcClient();
 		client.setHost("127.0.0.1");
@@ -37,16 +38,24 @@ public class SimpleRpcClientTest {
 		TestRemoteBean remoteBean = helloService.getBean(tb, 100);
 
 		System.out.println(remoteBean);
-
-		HashSet<String> stringHashSet = new HashSet<String>();
+		for(int i=0;i<1000;i++){
+			try{
+				HashSet<String> stringHashSet = new HashSet<String>();
 //		stringHashSet.add("hfrg5rhrh");
-		List<String> result = helloService.getString(stringHashSet);
-		System.out.println(result);
+				List<String> result = helloService.getString(stringHashSet);
+				System.out.println(result);
 
-		String[] rr  = helloService.hahahString(result.toArray(new String[0]));
-		System.out.println(rr);
+				String[] rr  = helloService.hahahString(result.toArray(new String[0]));
+				System.out.println(rr);
+
+			}catch (Exception e){
+				System.out.println(new Date());
+				e.printStackTrace();
+			}finally {
+				Thread.currentThread().sleep(1000);
+			}
+		}
 		client.stopService();
-		
 	}
 
 }

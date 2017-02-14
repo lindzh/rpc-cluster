@@ -26,7 +26,7 @@ public class LimitDefine {
     private String method;
 
     /**
-     * 限流时长
+     * 限流时长 单位ms
      */
     private int ttl;
 
