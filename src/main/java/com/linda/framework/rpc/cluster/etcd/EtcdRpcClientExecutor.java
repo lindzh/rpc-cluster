@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.linda.framework.rpc.cluster.*;
+import com.linda.framework.rpc.cluster.limit.LimitDefine;
 import com.linda.framework.rpc.exception.RpcException;
 import org.apache.log4j.Logger;
 
@@ -434,6 +435,12 @@ public class EtcdRpcClientExecutor extends AbstractRpcClusterClientExecutor {
 
 		this.watchApplication(application);
 		return list;
+	}
+
+	void setLimits(String application,List<LimitDefine> limits){
+		String key = EtcdUtils.genLimitKey(namespace, application);
+		String data = JSONUtils.toJSON(limits);
+		etcdClient.set(key,data);
 	}
 
 	private void doSetWehgit(String application,String key,int weight,boolean override){

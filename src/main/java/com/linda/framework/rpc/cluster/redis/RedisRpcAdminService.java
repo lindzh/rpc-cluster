@@ -5,6 +5,8 @@ import java.util.Set;
 
 import com.linda.framework.rpc.cluster.ConsumeRpcObject;
 import com.linda.framework.rpc.cluster.HostWeight;
+import com.linda.framework.rpc.cluster.limit.LimitDefine;
+import com.linda.framework.rpc.exception.RpcException;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import com.linda.framework.rpc.RpcService;
@@ -119,5 +121,10 @@ public class RedisRpcAdminService extends RpcAdminService implements Service {
 	@Override
 	public List<ConsumeRpcObject> getConsumers(String group, String service, String version) {
 		return this.getRedisExecutor().getConsumeObjects(group, service, version);
+	}
+
+	@Override
+	public void setLimits(String application,List<LimitDefine> limits) {
+		throw new RpcException("not supported operation!");
 	}
 }

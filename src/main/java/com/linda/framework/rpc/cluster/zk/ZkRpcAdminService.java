@@ -9,6 +9,7 @@ import com.linda.framework.rpc.cluster.ConsumeRpcObject;
 import com.linda.framework.rpc.cluster.HostWeight;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.cluster.admin.RpcAdminService;
+import com.linda.framework.rpc.cluster.limit.LimitDefine;
 import com.linda.framework.rpc.net.AbstractRpcConnector;
 import com.linda.framework.rpc.serializer.RpcSerializer;
 
@@ -84,5 +85,10 @@ public class ZkRpcAdminService extends RpcAdminService implements Service  {
 	@Override
 	public List<ConsumeRpcObject> getConsumers(String group, String service, String version) {
 		return this.getExecutor().getConsumeObjects(group, service, version);
+	}
+
+	@Override
+	public void setLimits(String application,List<LimitDefine> limits) {
+		this.getExecutor().setLimits(application,limits);
 	}
 }

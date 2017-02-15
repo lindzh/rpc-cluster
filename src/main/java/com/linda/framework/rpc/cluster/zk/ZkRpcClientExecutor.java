@@ -7,6 +7,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import com.linda.framework.rpc.cluster.*;
 import com.linda.framework.rpc.cluster.JSONUtils;
 import com.linda.framework.rpc.cluster.hash.RandomHashing;
+import com.linda.framework.rpc.cluster.limit.LimitDefine;
 import com.linda.jetcd.*;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -511,6 +512,23 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 		return ZKUtils.genServerKey(MD5Utils.hostMd5(this.getApplication(),host,port));
 	}
 
+	/**
+	 * 更改权重
+	 * @param application
+	 * @param limits
+     */
+	void setLimits(String application,List<LimitDefine> limits){
+		String key = ZKUtils.genLimitKey(application);
+		String data = JSONUtils.toJSON(limits);
+		try{
+			zkclient.setData().forPath(key,data.getBytes());
+			logger.error("[ZK] set limit success key:"+key+" data:"+data);
+		}catch (Exception e){
+			logger.error("[ZK] set limit error key:"+key+" data:"+data);
+			throw new RpcException(e);
+		}
+	}
+
 	private void doUploadServerInfo(RpcHostAndPort hostAndPort){
 		String serverKey = this.genServerKey(hostAndPort.getHost(),hostAndPort.getPort());
 		String hostAndPortJson = JSONUtils.toJSON(hostAndPort);
@@ -535,4 +553,5 @@ public class ZkRpcClientExecutor extends AbstractRpcClusterClientExecutor{
 	public void setAdmin(boolean admin) {
 		isAdmin = admin;
 	}
+
 }

@@ -62,13 +62,7 @@ public class EtcdRpcServer extends RpcClusterServer {
 		return "/"+namespace+"/services/" + this.serverMd5;
 	}
 
-	/**
-	 * 限流配置
-	 * @return
-     */
-	private String genLimitKey(){
-		return "/"+namespace+"/limit/" + this.getApplication();
-	}
+
 
 	private Random random = new Random();
 
@@ -245,7 +239,7 @@ public class EtcdRpcServer extends RpcClusterServer {
 	 * 获取限流列表
 	 */
 	private void fetchLimit(){
-		EtcdResult etcdResult = this.etcdClient.get(this.genLimitKey());
+		EtcdResult etcdResult = this.etcdClient.get(EtcdUtils.genLimitKey(namespace,this.getApplication()));
 		if(etcdResult.isSuccess()){
 			String value = etcdResult.getNode().getValue();
 			if(value!=null){
@@ -264,7 +258,7 @@ public class EtcdRpcServer extends RpcClusterServer {
 	 * 监控限流配置
 	 */
 	private void watchLimit(){
-		this.etcdClient.watch(this.genLimitKey(), new EtcdWatchCallback() {
+		this.etcdClient.watch(EtcdUtils.genLimitKey(namespace,this.getApplication()), new EtcdWatchCallback() {
 			@Override
 			public void onChange(EtcdChangeResult future) {
 				if(future.isOk()){

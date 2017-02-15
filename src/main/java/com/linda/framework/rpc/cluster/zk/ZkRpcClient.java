@@ -2,6 +2,7 @@ package com.linda.framework.rpc.cluster.zk;
 
 import com.linda.framework.rpc.client.AbstractClientRemoteExecutor;
 import com.linda.framework.rpc.cluster.RpcClusterClient;
+import org.apache.curator.framework.CuratorFramework;
 
 public class ZkRpcClient extends RpcClusterClient {
 
@@ -82,6 +83,4 @@ public class ZkRpcClient extends RpcClusterClient {
 		this.checkExecutor();
 		return zkRpcClientExecutor;
 	}
-	
-	
 }

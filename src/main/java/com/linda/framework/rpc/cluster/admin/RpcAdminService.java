@@ -8,6 +8,7 @@ import com.linda.framework.rpc.Service;
 import com.linda.framework.rpc.cluster.ConsumeRpcObject;
 import com.linda.framework.rpc.cluster.HostWeight;
 import com.linda.framework.rpc.cluster.RpcHostAndPort;
+import com.linda.framework.rpc.cluster.limit.LimitDefine;
 import com.linda.framework.rpc.serializer.RpcSerializer;
 
 public abstract class RpcAdminService implements Service{
@@ -37,5 +38,7 @@ public abstract class RpcAdminService implements Service{
 	public abstract void setWeight(String application,HostWeight weight);
 
 	public abstract List<ConsumeRpcObject> getConsumers(String group, String service, String version);
+
+	public abstract void setLimits(String application,List<LimitDefine> limits);
 
 }
