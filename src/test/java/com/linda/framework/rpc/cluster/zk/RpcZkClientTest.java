@@ -20,13 +20,21 @@ public class RpcZkClientTest {
 		int index = 50000;
 		
 		while(true){
-			rpcService.sayHello("this is rpc etcd test-"+index, index);
-			index++;
-			try {
-				Thread.sleep(1000L);
-			} catch (InterruptedException e) {
+			try{
+				rpcService.sayHello("this is rpc etcd test-"+index, index);
+				String hello = rpcService.getHello();
+				System.out.println(hello);
+				index++;
+			}catch (Exception e){
 				e.printStackTrace();
+			}finally {
+				try {
+					Thread.sleep(1000L);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
+
 		}
 		
 		

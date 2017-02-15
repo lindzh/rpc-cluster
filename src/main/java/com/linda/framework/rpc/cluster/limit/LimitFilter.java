@@ -7,12 +7,15 @@ import com.linda.framework.rpc.exception.RpcException;
 import com.linda.framework.rpc.filter.RpcFilter;
 import com.linda.framework.rpc.filter.RpcFilterChain;
 import com.linda.framework.rpc.net.RpcSender;
+import org.apache.log4j.Logger;
 
 /**
  * Created by lin on 2017/1/24.
  * 限流
  */
 public class LimitFilter implements RpcFilter {
+
+    private Logger logger = Logger.getLogger("rpcCluster");
 
     private LimitCache limitCache;
 

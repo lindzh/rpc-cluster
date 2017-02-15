@@ -13,6 +13,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.BackgroundCallback;
 import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.log4j.Logger;
@@ -27,6 +28,7 @@ import com.linda.framework.rpc.exception.RpcException;
 import com.linda.framework.rpc.net.RpcNetBase;
 import com.linda.framework.rpc.utils.RpcUtils;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
 
 /**
  * 基于zk的服务化管理
@@ -73,8 +75,9 @@ public class ZkRpcServer extends RpcClusterServer{
 
 	@Override
 	public void startService() {
-		super.startService();
 		this.addRpcFilter(new LimitFilter(limitCache));
+		logger.info("[SERVER] limit filter added");
+		super.startService();
 	}
 
 	@Override
@@ -155,9 +158,11 @@ public class ZkRpcServer extends RpcClusterServer{
 		try {
 			List<LimitDefine> limits = ZKUtils.getLimits(this.getApplication(), zkclient);
 			limitCache.addOrUpdate(limits);
+			logger.info("[ZK] limit has fetched data is:"+JSONUtils.toJSON(limits));
 		} catch (Exception e) {
 			if(e instanceof KeeperException.NoNodeException){
-				limitCache.addOrUpdate(new ArrayList<LimitDefine>());
+				logger.info("[ZK] limit node not exist");
+//				limitCache.addOrUpdate(new ArrayList<LimitDefine>());
 			}else{
 				logger.error("fetch application request limit config failed",e);
 			}
@@ -166,22 +171,16 @@ public class ZkRpcServer extends RpcClusterServer{
 
 	private void watchLimit(){
 		try{
-			zkclient.getData().inBackground(new BackgroundCallback() {
+			zkclient.getData().usingWatcher(new CuratorWatcher() {
 				@Override
-				public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception {
-					byte[] data = curatorEvent.getData();
-					if(data!=null){
-						List<LimitDefine> limitDefines = JSONUtils.fromJSON(new String(data), new TypeReference<List<LimitDefine>>() {});
-						limitCache.addOrUpdate(new ArrayList<LimitDefine>());
-					}
-					if(!ZkRpcServer.this.stop){
-						watchLimit();
-					}
+				public void process(WatchedEvent watchedEvent) throws Exception {
+					watchLimit();
+					fetchLimit();
 				}
-			}).forPath(ZKUtils.genLimitKey(this.getApplication()));
+			}).inBackground().forPath(ZKUtils.genLimitKey(this.getApplication()));
 		}catch(Exception e){
 			if(e instanceof KeeperException.NoNodeException){
-				limitCache.addOrUpdate(new ArrayList<LimitDefine>());
+//				limitCache.addOrUpdate(new ArrayList<LimitDefine>());
 			}else{
 				logger.error("fetch application request limit config failed",e);
 			}
