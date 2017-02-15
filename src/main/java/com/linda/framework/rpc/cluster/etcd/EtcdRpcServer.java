@@ -2,7 +2,15 @@ package com.linda.framework.rpc.cluster.etcd;
 
 import java.util.*;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.linda.framework.rpc.cluster.limit.LimitCache;
+import com.linda.framework.rpc.cluster.limit.LimitDefine;
+import com.linda.framework.rpc.cluster.limit.LimitFilter;
+import com.linda.framework.rpc.cluster.zk.ZKUtils;
+import com.linda.jetcd.EtcdChangeResult;
 import com.linda.jetcd.EtcdResult;
+import com.linda.jetcd.EtcdWatchCallback;
+import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.log4j.Logger;
 
 import com.linda.framework.rpc.RpcService;
@@ -13,6 +21,8 @@ import com.linda.framework.rpc.cluster.RpcHostAndPort;
 import com.linda.framework.rpc.net.RpcNetBase;
 import com.linda.framework.rpc.utils.RpcUtils;
 import com.linda.jetcd.EtcdClient;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
 
 /**
  * 
@@ -39,6 +49,8 @@ public class EtcdRpcServer extends RpcClusterServer {
 	private String serverMd5 = null;
 	
 	private long time = 0;
+
+	private LimitCache limitCache = new LimitCache();
 	
 	private Logger logger = Logger.getLogger("rpcCluster");
 
@@ -48,6 +60,14 @@ public class EtcdRpcServer extends RpcClusterServer {
 
 	private String genServerServiceKey() {
 		return "/"+namespace+"/services/" + this.serverMd5;
+	}
+
+	/**
+	 * 限流配置
+	 * @return
+     */
+	private String genLimitKey(){
+		return "/"+namespace+"/limit/" + this.getApplication();
 	}
 
 	private Random random = new Random();
@@ -67,6 +87,13 @@ public class EtcdRpcServer extends RpcClusterServer {
 		etcdClient.stop();
 	}
 
+	@Override
+	public void startService() {
+		this.addRpcFilter(new LimitFilter(limitCache));
+		logger.info("[SERVER] limit filter added");
+		super.startService();
+	}
+
 	/**
 	 * 启动成功之后,添加service,然后添加server
 	 * @param network
@@ -82,6 +109,9 @@ public class EtcdRpcServer extends RpcClusterServer {
 		this.startHeartBeat();
 
 		this.doSetWehgit(getApplication(),this.getHost()+":"+this.getPort(),100,false);
+		//限流获取与监控
+		fetchLimit();
+		watchLimit();
 	}
 
 	private void stopHeartBeat() {
@@ -209,6 +239,51 @@ public class EtcdRpcServer extends RpcClusterServer {
 
 	private String genApplicationWeightHostkey(String application,String hostkey){
 		return "/"+namespace+"/weight/"+application+"/weights/"+hostkey;
+	}
+
+	/**
+	 * 获取限流列表
+	 */
+	private void fetchLimit(){
+		EtcdResult etcdResult = this.etcdClient.get(this.genLimitKey());
+		if(etcdResult.isSuccess()){
+			String value = etcdResult.getNode().getValue();
+			if(value!=null){
+				List<LimitDefine> limits = JSONUtils.fromJSON(value, new TypeReference<List<LimitDefine>>() {});
+				logger.info("[ETCD] limit has fetched data is:"+value);
+				limitCache.addOrUpdate(limits);
+			}else{
+				logger.info("[ETCD] limit has fetched empty data");
+			}
+		}else{
+			logger.info("[ETCD] limit get limit failed");
+		}
+	}
+
+	/**
+	 * 监控限流配置
+	 */
+	private void watchLimit(){
+		this.etcdClient.watch(this.genLimitKey(), new EtcdWatchCallback() {
+			@Override
+			public void onChange(EtcdChangeResult future) {
+				if(future.isOk()){
+					if(future.getResult()!=null&&future.getResult().getNode()!=null){
+						String value = future.getResult().getNode().getValue();
+						if(value!=null){
+							List<LimitDefine> limits = JSONUtils.fromJSON(value, new TypeReference<List<LimitDefine>>() {});
+							logger.info("[ETCD] event limit has fetched data is:"+value);
+							limitCache.addOrUpdate(limits);
+						}
+					}else{
+						logger.error("[ETCD] limit event repsonse node not exist");
+					}
+				}else{
+					logger.error("[ETCD] limit watch event failed,message is:"+future.getFailReason());
+				}
+				watchLimit();
+			}
+		});
 	}
 
 }

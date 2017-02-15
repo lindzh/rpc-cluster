@@ -154,6 +154,9 @@ public class ZkRpcServer extends RpcClusterServer{
 		logger.info("clean server data");
 	}
 
+	/**
+	 * 获取限流列表
+     */
 	private void fetchLimit(){
 		try {
 			List<LimitDefine> limits = ZKUtils.getLimits(this.getApplication(), zkclient);
@@ -169,6 +172,9 @@ public class ZkRpcServer extends RpcClusterServer{
 		}
 	}
 
+	/**
+	 * 监控限流配置
+     */
 	private void watchLimit(){
 		try{
 			zkclient.getData().usingWatcher(new CuratorWatcher() {

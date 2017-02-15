@@ -9,7 +9,7 @@ public class EtcdClientTest {
 	public static void main(String[] args) throws InterruptedException {
 		
 		EtcdRpcClient client = new EtcdRpcClient();
-		client.setEtcdUrl("http://127.0.0.1:2379");
+		client.setEtcdUrl("http://192.168.139.128:2911");
 		client.setNamespace("myapp");
 		client.setApplication("test");
 		client.setSerializer(new SimpleSerializer());
@@ -17,17 +17,23 @@ public class EtcdClientTest {
 		HelloRpcService rpcService = client.register(HelloRpcService.class);
 		
 		int index = 50000;
-		
-		while(true){
 
-			try {
+		while(true){
+			try{
 				rpcService.sayHello("this is rpc etcd test-"+index, index);
+				String hello = rpcService.getHello();
+				System.out.println(hello);
 				index++;
-				Thread.sleep(1000L);
-			} catch (Exception e) {
+			}catch (Exception e){
 				e.printStackTrace();
-				Thread.sleep(1000L);
+			}finally {
+				try {
+					Thread.sleep(1000L);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
+
 		}
 	}
 

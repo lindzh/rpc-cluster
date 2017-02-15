@@ -14,7 +14,7 @@ public class EtcdServerTest {
 	public static void main(String[] args) {
 		
 		EtcdRpcServer rpcServer = new EtcdRpcServer();
-		rpcServer.setEtcdUrl("http://127.0.0.1:2379");
+		rpcServer.setEtcdUrl("http://192.168.139.128:2911");
 		rpcServer.setNamespace("myapp");
 		rpcServer.setApplication("simple");
 		rpcServer.setSerializer(new SimpleSerializer());
